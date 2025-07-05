@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Turbo Cab - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'account/css/driverlogin.css' %}" />
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <h2 class="title">Log in</h2>
+      <form action="/login" method="post" class="login-form">
+        <div class="input-group">
+          <label>Email address</label>
+          <div class="input-box">
+            <i class='bx bx-envelope'></i>
+            <input type="email" placeholder="test@saberali.co" required />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Password</label>
+          <div class="input-box">
+            <i class='bx bx-lock'></i>
+            <input type="password" placeholder="**********" required />
+            <!-- <i class='bx bx-low-vision eye-icon'></i> -->
+          </div>
+        </div>
+
+        <div class="options">
+          <label><input type="checkbox" /> Remember password</label>
+        </div>
+
+        <button type="submit" class="sign-in-btn">Sign In</button>
+
+        <div class="footer-text">
+          Don't have an account? <a href="{% url 'driver_signup' %}">Sign up</a>
+        </div>
+
+        <div class="divider"><span>Or</span></div>
+
+        <button class="google-btn">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_2013_Google.png" alt="Google" />
+          Log in with Google
+        </button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
+

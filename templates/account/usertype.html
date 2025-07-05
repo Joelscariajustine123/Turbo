@@ -1,0 +1,30 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Choose Role - Turbo Cab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
+  <link rel="stylesheet" href="{% static 'account/css/usertyp.css' %}" />
+</head>
+<body>
+  <div class="container">
+
+    <!-- Turbo Logo with racing animation -->
+    <div class="logo-container">
+      <img src="{% static 'account/img/logo1.PNG' %}" alt="Turbo Logo" class="logo-img" />
+    </div>
+
+    <h1 class="title">Choose Your Role</h1>
+
+    <div class="button-group">
+      <a href="{% url 'driver_login' %}" class="role-button driver"><i class='bx bxs-car'></i> Driver</a>
+      <a href="{% url 'rider_login' %}" class="role-button rider"><i class='bx bxs-user'></i> Rider</a>
+      <a href="{% url 'admin_login' %}" class="role-button admin"><i class='bx bxs-cog'></i> Admin</a>
+    </div>
+    
+  </div>
+</body>
+</html>

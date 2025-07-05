@@ -1,0 +1,136 @@
+/* Reset and base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #000000;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Container Card */
+.container {
+  text-align: center;
+  padding: 2.5rem;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 20px;
+  box-shadow: 0 0 60px #636262;
+  animation: fadeIn 1s ease forwards;
+  position: relative;
+  z-index: 1;
+}
+
+/* Logo Styling with Racing Effect */
+.logo-container {
+  margin-bottom: 2rem;
+}
+
+.logo-img {
+  width: 200px;
+  max-width: 90%;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.15));
+  animation: raceMove 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* Title */
+.title {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  color: #fff;
+}
+
+/* Button Group */
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+/* Role Buttons */
+.role-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  color: #fff;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(255,255,255,0.05);
+  backdrop-filter: blur(6px);
+}
+
+.role-button i {
+  margin-right: 10px;
+  font-size: 1.5rem;
+}
+
+/* Individual Button Styles */
+.driver {
+  background: linear-gradient(135deg, #007bff, #005eff);
+}
+.driver:hover {
+  background: #0055cc;
+  transform: scale(1.05);
+}
+
+.rider {
+  background: linear-gradient(135deg, #28a745, #218838);
+}
+.rider:hover {
+  background: #1e7e34;
+  transform: scale(1.05);
+}
+
+.admin {
+  background: linear-gradient(135deg, #ffc107, #e0a800);
+  color: #000;
+}
+.admin:hover {
+  background: #d39e00;
+  color: #000;
+  transform: scale(1.05);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes raceMove {
+  0% {
+    transform: translateX(0) skewX(0deg);
+    opacity: 1;
+  }
+  30% {
+    transform: translateX(12px) skewX(-8deg);
+    opacity: 0.92;
+  }
+  60% {
+    transform: translateX(-12px) skewX(6deg);
+    opacity: 0.92;
+  }
+  100% {
+    transform: translateX(0) skewX(0deg);
+    opacity: 1;
+  }
+}

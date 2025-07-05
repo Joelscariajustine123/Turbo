@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up - Turbo Cab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/signup.css" />
+</head>
+<body>
+  <div class="signup-container">
+    <h2 class="title">Sign Up</h2>
+    <form action="/signup" method="post" class="signup-form">
+      <div class="input-group">
+        <label>Full Name</label>
+        <div class="input-box">
+          <i class='bx bx-user'></i>
+          <input type="text" placeholder="John Doe" required />
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Email address</label>
+        <div class="input-box">
+          <i class='bx bx-envelope'></i>
+          <input type="email" placeholder="you@example.com" required />
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Password</label>
+        <div class="input-box">
+          <i class='bx bx-lock'></i>
+          <input type="password" placeholder="********" required />
+          <i class='bx bx-low-vision eye-icon'></i>
+        </div>
+      </div>
+
+      <button type="submit" class="signup-btn">Sign Up</button>
+
+      <div class="footer-text">
+        Already have an account? <a href="login.html">Log in</a>
+      </div>
+
+      <div class="divider"><span>Or</span></div>
+
+      <button class="google-btn">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_2013_Google.png" alt="Google" />
+        Sign up with Google
+      </button>
+    </form>
+  </div>
+</body>
+</html>
