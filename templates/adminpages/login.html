@@ -1,0 +1,105 @@
+<!-- Sign In Page -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+    <link rel="stylesheet" href="pages/css/login.css">
+</head>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #000;
+        color: #fff;
+        background-image: linear-gradient(rgba(0,0,0,0.75),rgba(0,0,0,0.75)),url(img/vecteezy_the-woman-put-her-smartphone-in-the-car-phone-holder-for-the_6666989.jpg);
+        background-size: cover;
+
+    }
+    
+    .login-container {
+        background: #111;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 15px rgba(255, 255, 255, 0.2);
+        text-align: center;
+        width: 350px;
+    }
+    
+    .input-group {
+        margin-bottom: 15px;
+        text-align: left;
+    }
+    
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #fff;
+        border-radius: 5px;
+        background: #222;
+        color: #fff;
+    }
+    
+    button {
+        width: 100%;
+        padding: 10px;
+        background: #fff;
+        color: #000;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 10px;
+    }
+    
+    button:hover {
+        background: #ccc;
+    }
+    
+    .forgot, p a {
+        color: #fff;
+        text-decoration: none;
+        font-size: 14px;
+    }
+    </style>
+    
+<body>
+    <div class="login-container">
+        <h2>Sign In</h2>
+        <form action="#">
+        <div class="input-group">
+            <label for="user_type">User Type</label>
+            <select id="user_type" name="user_type" required>
+            <option value="rider">Rider</option>
+            <option value="driver">Driver</option>
+            <option value="admin">Admin</option>
+            </select>
+      </div>
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <a href="#" class="forgot">Forgot your password?</a>
+            <button type="submit">Sign In</button>
+        </form>
+        <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
+    </div>
+</body>
+</html>
+
+
