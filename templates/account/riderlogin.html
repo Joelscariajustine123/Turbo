@@ -13,7 +13,8 @@
   <div class="login-page">
     <div class="login-card">
       <h2 class="title">Log in</h2>
-      <form action="/login" method="post" class="login-form">
+      <form action="" method="post" class="login-form">
+        {% csrf_token %}
         <div class="input-group">
           <label>Email address</label>
           <div class="input-box">

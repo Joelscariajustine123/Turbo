@@ -13,12 +13,13 @@
   <div class="login-page">
     <div class="login-card">
       <h2 class="title">Log in</h2>
-      <form action="/login" method="post" class="login-form">
+      <form action="" method="post" class="login-form">
+        {% csrf_token %}
         <div class="input-group">
           <label>Email address</label>
           <div class="input-box">
             <i class='bx bx-envelope'></i>
-            <input type="email" placeholder="test@saberali.co" required />
+            <input type="email" name="email" placeholder="test@saberali.co" required />
           </div>
         </div>
 
@@ -26,7 +27,7 @@
           <label>Password</label>
           <div class="input-box">
             <i class='bx bx-lock'></i>
-            <input type="password" placeholder="**********" required />
+            <input type="password" name="password" placeholder="**********" required />
             <!-- <i class='bx bx-low-vision eye-icon'></i> -->
           </div>
         </div>

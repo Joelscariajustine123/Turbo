@@ -35,6 +35,7 @@ def ridersignup(request):
     if request.method == 'POST':
         full_name = request.POST.get('full_name')
         email = request.POST.get('email')
+        username = request.POST.get('username')
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
 
@@ -49,7 +50,7 @@ def ridersignup(request):
         user = CustomUser.objects.create(
             full_name=full_name,
             email=email,
-            username=email,
+            username=username,
             password=make_password(password1),
             role='rider'
         )
@@ -62,6 +63,7 @@ def ridersignup(request):
 def driversignup(request):
     if request.method == 'POST':
         full_name = request.POST.get('full_name')
+        username = request.POST.get('username')
         email = request.POST.get('email')
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
@@ -77,7 +79,7 @@ def driversignup(request):
         user = CustomUser.objects.create(
             full_name=full_name,
             email=email,
-            username=email,
+            username=username,
             password=make_password(password1),
             role='driver'
         )
@@ -90,6 +92,7 @@ def driversignup(request):
 def adminsignup(request):
     if request.method == 'POST':
         full_name = request.POST.get('full_name')
+        username = request.POST.get('username')
         email = request.POST.get('email')
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
@@ -105,7 +108,7 @@ def adminsignup(request):
         user = CustomUser.objects.create(
             full_name=full_name,
             email=email,
-            username=email,
+            username=username,
             password=make_password(password1),
             role='admin'
         )
