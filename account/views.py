@@ -27,7 +27,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 from .models import CustomUser
-
+from adminpages.views import home
 
 # ---------- SIGNUP VIEWS ----------
 
@@ -160,7 +160,7 @@ def adminlogin(request):
         user = authenticate(request, email=email, password=password)
         if user is not None and user.role == 'admin':
             login(request, user)
-            return redirect('admin_dashboard')  # define this
+            return redirect('home')  # define this
         else:
             messages.error(request, "Invalid login credentials for Admin")
             return render(request, 'account/adminlogin.html')
