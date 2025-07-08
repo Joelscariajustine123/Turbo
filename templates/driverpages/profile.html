@@ -1,0 +1,26 @@
+{% extends 'driverpages/base.html' %}
+{% block content %}
+    <main class="profile-container">
+      <section class="profile-card">
+        <div class="avatar-wrapper">
+          <img src="img/driver-icon.jpg" alt="Driver Photo" class="avatar">
+        </div>
+        <div class="info">
+          <h2>John Doe</h2>
+          <p class="status"><i class="bx bxs-circle green"></i> Available</p>
+          <div class="details">
+            <p><strong>Email:</strong> johndoe@example.com</p>
+            <p><strong>Phone:</strong> +91 98765 43210</p>
+            <p><strong>License:</strong> DL-142019009123</p>
+            <p><strong>Vehicle:</strong> Toyota Prius (KA 19 AB 1234)</p>
+          </div>
+          <div class="buttons">
+            <button class="btn edit">Edit Profile</button>
+            <button class="btn upload">Upload Photo</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+
+{% endblock content %}

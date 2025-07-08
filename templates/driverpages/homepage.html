@@ -1,0 +1,83 @@
+{% extends 'driverpages/base.html' %}
+{% block content %}
+    <!-- ========== Main Dashboard Content ========== -->
+    <main class="content">
+      
+      <!-- Driver Profile Section -->
+      <section class="driver-profile">
+        <div class="profile-info">
+          <img src="img/driver-icon.jpg" alt="Driver Avatar" class="avatar" />
+          <h2>John Doe</h2>
+          <p class="status">Available</p>
+          <button class="change-status">Change Status</button>
+        </div>
+      </section>
+
+      <!-- Ride Requests Section -->
+      <section class="ride-requests">
+        <h3>Ride Requests</h3>
+        <div class="ride-request">
+          <div class="details">
+            <p><strong>Pickup:</strong> Kannur</p>
+            <p><strong>Drop:</strong> Airport</p>
+          </div>
+          <div class="actions">
+            <button class="accept">Accept</button>
+            <button class="decline">Decline</button>
+          </div>
+        </div>
+        <div class="ride-request">
+          <div class="details">
+            <p><strong>Pickup:</strong> City Center</p>
+            <p><strong>Drop:</strong> Park</p>
+          </div>
+          <div class="actions">
+            <button class="accept">Accept</button>
+            <button class="decline">Decline</button>
+          </div>
+        </div>
+      </section>
+
+    
+      
+        <!-- Live Map Section -->
+<section class="map-section">
+  <h3><i class="bx bx-map-pin"></i> Your Current Location</h3>
+  <div id="map-container">
+    <!-- You can embed a real map here using Google Maps or Leaflet.js -->
+    <iframe
+      src="https://maps.google.com/maps?q=Kannur&t=&z=13&ie=UTF8&iwloc=&output=embed"
+      width="100%"
+      height="100%"
+      style="border:0; border-radius: 16px;"
+      allowfullscreen=""
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade">
+    </iframe>
+     
+  </div>
+</section>
+
+
+
+      <!-- Earnings Summary Section -->
+      <section class="earnings">
+        <h3>Earnings Summary</h3>
+        <div class="earnings-details">
+          <p><strong>Total Earnings:</strong> $350</p>
+          <p><strong>This Week:</strong> $100</p>
+        </div>
+      </section>
+
+      <!-- Ratings Section -->
+      <section class="ratings">
+        <h3>Your Ratings</h3>
+        <div class="ratings-info">
+          <p><strong>Overall Rating:</strong> 4.8</p>
+          <p><strong>Reviews:</strong> 120</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+{% endblock content %}

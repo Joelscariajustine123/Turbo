@@ -1,0 +1,45 @@
+{% extends 'driverpages/base.html' %}
+{% block content %}
+    <main class="content">
+      <section class="settings">
+        <h3><i class="bx bx-cog"></i> Driver Settings</h3>
+
+        <form class="settings-form">
+          <div class="form-group">
+            <label for="driver-name">Full Name</label>
+            <input type="text" id="driver-name" placeholder="John Doe" />
+          </div>
+
+          <div class="form-group">
+            <label for="driver-phone">Phone Number</label>
+            <input type="tel" id="driver-phone" placeholder="+91 9876543210" />
+          </div>
+
+          <div class="form-group">
+            <label for="driver-email">Email Address</label>
+            <input type="email" id="driver-email" placeholder="johndoe@example.com" />
+          </div>
+
+          <div class="form-group">
+            <label for="vehicle-info">Vehicle Info</label>
+            <input type="text" id="vehicle-info" placeholder="Toyota Etios, KL-13-XXXX" />
+          </div>
+
+          <div class="form-group">
+            <label for="availability">Availability Status</label>
+            <select id="availability">
+              <option value="available">Available</option>
+              <option value="offline">Offline</option>
+              <option value="on-trip">On a Trip</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <button type="submit" class="save-settings">Save Changes</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+{% endblock content %}

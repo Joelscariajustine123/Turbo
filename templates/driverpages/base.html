@@ -1,0 +1,41 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Earnings - Turbo Cab</title>
+  <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'driverpages/css/earning.css' %}">
+  <link rel="stylesheet" href="{% static 'driverpages/css/homepage.css' %}">
+  <link rel="stylesheet" href="{% static 'driverpages/css/profile.css' %}">
+  <link rel="stylesheet" href="{% static 'driverpages/css/settings.css' %}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo">
+        <h1>Turbo Cab</h1>
+      </div>
+      <div class="nav">
+        <a href="homepage.html">Dashboard</a>
+        <a href="#" class="active">Earnings</a>
+        <a href="profile.html">Profile</a>
+        <a href="settings.html">Settings</a>
+        <a href="login.html">Logout</a>
+      </div>
+    </header>
+    {% block content %}
+    {% endblock content %}
+    
+    <script src="{% static 'driverpages/js/scripts.js' %}"></script>
+
+    </section>
+  </div>
+</div>
+</body>
+</html>
