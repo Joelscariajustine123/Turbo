@@ -144,7 +144,8 @@ def driverlogin(request):
         user = authenticate(request, email=email, password=password)
         if user is not None and user.role == 'driver':
             login(request, user)
-            return redirect('driver_homepaged')  # define this
+            print("sucess")
+            return redirect('driverpages:driver_homepage')
         else:
             messages.error(request, "Invalid login credentials for Driver")
             return render(request, 'account/driverlogin.html')

@@ -20,9 +20,9 @@
     <h1 class="title">Choose Your Role</h1>
 
     <div class="button-group">
-      <a href="{% url 'driver_login' %}" class="role-button driver"><i class='bx bxs-car'></i> Driver</a>
-      <a href="{% url 'rider_login' %}" class="role-button rider"><i class='bx bxs-user'></i> Rider</a>
-      <a href="{% url 'admin_login' %}" class="role-button admin"><i class='bx bxs-cog'></i> Admin</a>
+      <a href="{% url 'account:driver_login' %}" class="role-button driver"><i class='bx bxs-car'></i> Driver</a>
+      <a href="{% url 'account:rider_login' %}" class="role-button rider"><i class='bx bxs-user'></i> Rider</a>
+      <a href="{% url 'account:admin_login' %}" class="role-button admin"><i class='bx bxs-cog'></i> Admin</a>
     </div>
     
   </div>
