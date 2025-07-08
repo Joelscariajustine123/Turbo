@@ -22,16 +22,17 @@
         <h1>Turbo Cab</h1>
       </div>
       <div class="nav">
-        <a href="homepage.html">Dashboard</a>
-        <a href="#" class="active">Earnings</a>
-        <a href="profile.html">Profile</a>
-        <a href="settings.html">Settings</a>
-        <a href="login.html">Logout</a>
+        <a href="{% url 'driver_homepage' %}">Dashboard</a>
+        <a href="{% url 'driver_earnings' %}" class="active">Earnings</a>
+        <a href="{% url 'driver_profile' %}">Profile</a>
+        <a href="{% url 'driver_settings' %}">Settings</a>
+        <a href="{% url 'driver_login' %}">Logout</a>
       </div>
+      
     </header>
     {% block content %}
     {% endblock content %}
-    
+
     <script src="{% static 'driverpages/js/scripts.js' %}"></script>
 
     </section>
