@@ -1,34 +1,39 @@
 {% extends 'adminpages/base.html' %}
 {% block content %}
-  <div class="main">
-    <div class="header">
-      <h1>Settings</h1>
-      <p>⚙️ Manage your account preferences</p>
-    </div>
-
-    <div class="settings-section">
-      <h2>Account Settings</h2>
-
+<div class="edit-form-wrapper">
+  <div class="edit-form-container">
+    <h2>Account Settings</h2>
+    <form method="post">
+      {% csrf_token %}
+      
       <div class="form-group">
         <label for="admin-name">Name</label>
-        <input type="text" id="admin-name" value="Admin User" />
+        <input type="text" id="admin-name" name="name" value="Admin User" />
       </div>
 
       <div class="form-group">
         <label for="admin-email">Email</label>
-        <input type="email" id="admin-email" value="admin@turbo.com" />
+        <input type="email" id="admin-email" name="email" value="admin@turbo.com" />
       </div>
 
       <div class="form-group">
         <label for="admin-password">Change Password</label>
-        <input type="password" id="admin-password" placeholder="Enter new password" />
+        <input type="password" id="admin-password" name="password" placeholder="Enter new password" />
       </div>
 
       <div class="form-group">
-        <label><input type="checkbox" checked /> Enable Notifications</label>
+        <label>
+          <input type="checkbox" name="notifications" checked />
+          Enable Notifications
+        </label>
       </div>
 
-      <button class="save-btn">Save Changes</button>
-    </div>
+      <div class="edit-form-actions">
+        <button type="submit">💾 Save</button>
+        <a href="{% url 'dashboard' %}" class="cancel-btn">❌ Cancel</a>
+      </div>
+    </form>
   </div>
+</div>
+
 {% endblock %}

@@ -9,4 +9,6 @@ urlpatterns = [
     path('report/', views.report, name='report'),
     path('rider/', views.rider, name='rider'),
     path('settings/', views.settings, name='settings'),
+    path('delete-rider/<int:rider_id>/', views.delete_rider, name='delete_rider'),
+    path('edit-rider/<int:rider_id>/', views.edit_rider, name='edit_rider'),
 ]

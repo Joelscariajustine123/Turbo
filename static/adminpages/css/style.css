@@ -1,286 +1,353 @@
-/* === Common Styles (shared by all pages) === */
 :root {
-    --bg-dark: #0f0f0f;
-    --bg-sidebar: #1a1a1c;
-    --card-bg: #1e1e1e;
-    --text-light: #f5f5f7;
-    --text-muted: #a1a1aa;
-    --accent: #3b82f6;
-    --danger: #ef4444;
-    --hover-bg: #2a2a2c;
+  --bg-dark: #0f0f0f;
+  --bg-sidebar: #1a1a1c;
+  --card-bg: #1e1e1e;
+  --text-light: #f5f5f7;
+  --text-muted: #a1a1aa;
+  --accent: #3b82f6;
+  --danger: #ef4444;
+  --hover-bg: #2a2a2c;
   --border: #2d2d2f;
   --green: #10b981;
   --orange: #f59e0b;
   --blue: #3b82f6;
-  }
+}
 
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-  body {
-    font-family: 'Inter', sans-serif;
-    display: flex;
-    height: 100vh;
-    background-color: var(--bg-dark);
-    color: var(--text-light);
-  }
+body {
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  height: 100vh;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+}
 
-  .sidebar {
-    width: 260px;
-    background-color: var(--bg-sidebar);
-    padding: 32px 24px;
-    display: flex;
-    flex-direction: column;
+/* === Sidebar === */
+.sidebar {
+  width: 260px;
+  background-color: var(--bg-sidebar);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
   border-right: 1px solid var(--border);
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
-  }
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+}
 
-  .sidebar h2 {
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 40px;
-    color: var(--text-light);
-    text-align: center;
-  }
+.sidebar h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  color: var(--text-light);
+  text-align: center;
+}
 
-  .nav-link {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 16px;
-    border-radius: 10px;
-    color: var(--text-muted);
-    text-decoration: none;
-    margin-bottom: 12px;
-    font-size: 15px;
-    transition: all 0.2s ease;
-  }
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: 12px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+}
 
-  .nav-link:hover {
-    background-color: var(--hover-bg);
-    color: var(--text-light);
-  }
-
-  .nav-link i {
-    font-size: 18px;
-  }
-
-  .logout-btn {
-    margin-top: auto;
-    background-color: var(--danger);
-    color: white;
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    text-decoration: none;
-    font-weight: 500;
-    transition: background-color 0.2s ease;
-  }
-
-  .logout-btn:hover {
-    background-color: #c53030;
-  }
-
-  .main {
-    flex-grow: 1;
-    padding: 30px;
-    overflow-y: auto;
-    background-color: var(--bg-dark);
-  }
-
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-  }
-
-  .header h1 {
-    font-size: 28px;
-    font-weight: 600;
-    color: var(--text-light);
-  }
-
-  .header p {
-    font-size: 14px;
-    color: var(--text-muted);
-  }
-
-/* === Home & Dashboard Cards/Stats === */
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-  }
-
-  .card {
-    background: var(--card-bg);
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
-    border: 1px solid #2c2c2e;
-    transition: transform 0.2s ease;
-  }
-
-  .card:hover {
-    transform: translateY(-4px);
-  }
-
-  .card h3 {
-    color: var(--text-light);
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-
-  .card p {
-    color: var(--text-muted);
-    font-size: 14px;
-  }
-
-/* === Table Styles (shared by most pages) === */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--card-bg);
-    border-radius: 12px;
-    overflow: hidden;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--border);
-  }
-
-  thead {
+.nav-link:hover {
   background-color: var(--hover-bg);
   color: var(--text-light);
-  }
+}
 
-  th, td {
-    padding: 14px 18px;
-    text-align: left;
-    font-size: 15px;
-    border-bottom: 1px solid #353535;
-  }
+.nav-link i {
+  font-size: 18px;
+}
 
-  th {
-    color: var(--text-light);
-    font-weight: 600;
-  }
-
-  td {
-    color: var(--text-muted);
-  }
-
-  tbody tr:hover {
-    background-color: #1f1f1f;
-  }
-
-/* === Status Classes (shared) === */
-  .status-completed {
-    color: var(--green);
-    font-weight: 600;
-  }
-
-  .status-pending {
-    color: var(--orange);
-    font-weight: 600;
-  }
-
-  .status-scheduled {
-    color: var(--blue);
-    font-weight: 600;
-  }
-
-/* === Payment Table Specific === */
-.paid {
-  color: #22c55e;
+.logout-btn {
+  margin-top: auto;
+  background-color: var(--danger);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-decoration: none;
   font-weight: 500;
+  transition: background-color 0.2s ease;
 }
 
-.pending {
-  color: #fbbf24;
-    font-weight: 500;
+.logout-btn:hover {
+  background-color: #c53030;
 }
 
-/* === Dashboard Section === */
-  .dashboard-section {
-    margin-top: 20px;
-  }
+/* === Main Content === */
+.main {
+  flex-grow: 1;
+  padding: 30px;
+  overflow-y: auto;
+  background-color: var(--bg-dark);
+}
 
-  .dashboard-section h2 {
-    font-size: 20px;
-    margin-bottom: 16px;
-    color: var(--text-light);
-  }
+/* === Header === */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
 
-  .empty-row td {
-    text-align: center;
-    color: var(--text-muted);
-    padding: 24px;
-    font-style: italic;
-  }
+.header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-light);
+}
 
-/* === Settings Page === */
-  .settings-section {
-    background-color: var(--card-bg);
-    padding: 25px;
-    border-radius: 12px;
-    max-width: 600px;
-    border: 1px solid #2c2c2e;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
-  }
+.header p {
+  font-size: 14px;
+  color: var(--text-muted);
+}
 
-  .settings-section h2 {
-    margin-bottom: 20px;
-    color: var(--text-light);
-    font-size: 20px;
-  }
+/* === Cards === */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
 
-  .form-group {
-    margin-bottom: 20px;
-  }
+.card {
+  background: var(--card-bg);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+  border: 1px solid #2c2c2e;
+  transition: transform 0.2s ease;
+}
 
-  .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--text-muted);
-    font-weight: 600;
-  }
+.card:hover {
+  transform: translateY(-4px);
+}
 
-  .form-group input,
-  .form-group select {
-    width: 100%;
-    padding: 10px;
-    border-radius: 8px;
-    background-color: #2b2b2d;
-    color: var(--text-light);
-    border: 1px solid #3a3a3c;
-  }
+.card h3 {
+  color: var(--text-light);
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
 
-  .form-group input[type="checkbox"] {
-    width: auto;
-    margin-right: 8px;
-  }
+.card p {
+  color: var(--text-muted);
+  font-size: 14px;
+}
 
-  .save-btn {
-    background-color: var(--accent);
-    color: white;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.2s ease;
-  }
+/* === Tables === */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+}
 
-  .save-btn:hover {
-    background-color: #c53030;
-  }
+thead {
+  background-color: var(--hover-bg);
+  color: var(--text-light);
+}
 
-/* === Add any page-specific overrides below as needed === */
+th, td {
+  padding: 14px 18px;
+  text-align: left;
+  font-size: 15px;
+  border-bottom: 1px solid #353535;
+}
+
+th {
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+td {
+  color: var(--text-muted);
+}
+
+tbody tr:hover {
+  background-color: #1f1f1f;
+}
+
+/* === Edit Form === */
+.form-container {
+  background-color: var(--card-bg);
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 500px;
+  border: 1px solid #2c2c2e;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+  margin: 0 auto;
+}
+
+.form-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--text-light);
+}
+
+form p {
+  margin-bottom: 16px;
+}
+
+form label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+form input[type="text"],
+form input[type="email"] {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  background-color: #2b2b2d;
+  color: var(--text-light);
+  border: 1px solid #3a3a3c;
+  font-size: 15px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+button[type="submit"],
+.cancel-btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.2s ease;
+}
+
+button[type="submit"] {
+  /* background-color: var(--green);  */
+  color: white;
+  border: none;
+}
+form input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  background-color: #2b2b2d;
+  color: var(--text-light);
+  border: 1px solid #3a3a3c;
+}
+
+button[type="submit"]:hover {
+  background-color: #059669;
+}
+
+.cancel-btn {
+  background-color: var(--danger);
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #c53030;
+}
+
+.edit-form-wrapper {
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  
+}
+
+.edit-form-container {
+  background-color: #1e1e1e; /* same as card-bg */
+  padding: 40px 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  border: 1px solid #2c2c2e;
+  max-width: 500px;
+  width: 100%;
+  margin-left: 200%;
+}
+
+.edit-form-container h2 {
+  text-align: center;
+  color: var(--text-light);
+  margin-bottom: 24px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.edit-form-container form p {
+  margin-bottom: 18px;
+}
+
+.edit-form-container label {
+  color: var(--text-muted);
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.edit-form-container input[type="text"],
+.edit-form-container input[type="email"] {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #3a3a3c;
+  background-color: #2b2b2d;
+  color: var(--text-light);
+  font-size: 15px;
+}
+
+.edit-form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+
+.edit-form-actions button,
+.edit-form-actions a {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.edit-form-actions button {
+  background-color: var(--green);
+  color: white;
+  border: none;
+}
+
+.edit-form-actions button:hover {
+  background-color: #059669;
+}
+
+.edit-form-actions .cancel-btn {
+  background-color: var(--danger);
+  color: white;
+}
+
+.edit-form-actions .cancel-btn:hover {
+  background-color: #c53030;
+}

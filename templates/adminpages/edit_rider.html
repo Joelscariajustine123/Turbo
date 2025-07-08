@@ -1,0 +1,18 @@
+{% extends 'adminpages/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="edit-form-wrapper">
+  <div class="edit-form-container">
+    <h2>Edit Rider</h2>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="edit-form-actions">
+        <button type="submit">💾 Save</button>
+        <a href="{% url 'rider' %}" class="cancel-btn">❌ Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

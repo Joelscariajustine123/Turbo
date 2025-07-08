@@ -10,7 +10,7 @@ class CustomUser(AbstractUser):
     full_name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
-
+    phone = models.CharField(max_length=10, default="9999999999")
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'full_name', 'role']
 

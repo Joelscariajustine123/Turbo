@@ -1,45 +1,47 @@
 {% extends 'adminpages/base.html' %}
 {% block content %}
-  <div class="main">
-    <div class="header">
-      <h1>Registered Riders</h1>
-      <p>👥 Total Riders: 1,024</p>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Full Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Joined Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>1</td>
-          <td>Anjali R.</td>
-          <td>anjali@example.com</td>
-          <td>+91 9876543210</td>
-          <td>2024-09-21</td>
-        </tr>
-        <tr>
-          <td>2</td>
-          <td>Ravi Kumar</td>
-          <td>ravi@example.com</td>
-          <td>+91 9123456780</td>
-          <td>2024-10-05</td>
-        </tr>
-        <tr>
-          <td>3</td>
-          <td>Shweta Nair</td>
-          <td>shweta@example.com</td>
-          <td>+91 9000011111</td>
-          <td>2024-10-12</td>
-        </tr>
-      </tbody>
-    </table>
+<div class="main">
+  <div class="header">
+    <h1>Registered Riders</h1>
+    <p>👥 Total Riders: {{ riders.count }}</p>
   </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Full Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Joined Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rider in riders %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ rider.full_name }}</td>
+        <td>{{ rider.email }}</td>
+        <td>{{ rider.phone }}</td>  {# Assuming you have a phone field in model #}
+        <td>{{ rider.date_joined|date:"Y-m-d" }}</td>
+        <td>
+          <a href="{% url 'edit_rider' rider.id %}"><button class="btn btn-primary">✏️ Edit</button></a> |
+          <form method="post" action="{% url 'delete_rider' rider.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this rider?');">
+              🗑️ Delete
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5">No riders found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
 {% endblock %}
