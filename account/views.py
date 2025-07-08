@@ -113,7 +113,7 @@ def adminsignup(request):
             role='admin'
         )
         messages.success(request, "Admin account created successfully!")
-        return redirect('admin_login')
+        return redirect('account:admin_login')
 
     return render(request, 'account/adminsignup.html')
 
@@ -128,7 +128,7 @@ def riderlogin(request):
         user = authenticate(request, email=email, password=password)
         if user is not None and user.role == 'rider':
             login(request, user)
-            return redirect('rider_dashboard')  # define this
+            return redirect('rider:rider_dashboard')  # define this
         else:
             messages.error(request, "Invalid login credentials for Rider")
             return render(request, 'account/riderlogin.html')
@@ -161,7 +161,7 @@ def adminlogin(request):
         user = authenticate(request, email=email, password=password)
         if user is not None and user.role == 'admin':
             login(request, user)
-            return redirect('home')  # define this
+            return redirect('adminpages:home')  # define this
         else:
             messages.error(request, "Invalid login credentials for Admin")
             return render(request, 'account/adminlogin.html')

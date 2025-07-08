@@ -16,13 +16,14 @@
   <!-- Sidebar -->
   <div class="sidebar">
     <h2>Turbo Admin</h2>
-    <a href="{% url 'dashboard' %}" class="nav-link"><i class='bx bx-home'></i>Dashboard</a>
-    <a href="{% url 'rider' %}" class="nav-link"><i class='bx bx-user'></i>Riders</a>
-    <a href="{% url 'booking' %}" class="nav-link"><i class='bx bx-car'></i>Bookings</a>
-    <a href="{% url 'payment' %}" class="nav-link"><i class='bx bx-wallet'></i>Payments</a>
-    <a href="{% url 'report' %}" class="nav-link"><i class='bx bx-bar-chart'></i>Reports</a>
-    <a href="{% url 'settings' %}" class="nav-link"><i class='bx bx-cog'></i>Settings</a>
-    <a href="{% url 'dashboard' %}" class="logout-btn"><i class='bx bx-log-out'></i> Logout</a> 
+    <a href="{% url 'adminpages:dashboard' %}" class="nav-link"><i class='bx bx-home'></i>Dashboard</a>
+    <a href="{% url 'adminpages:rider' %}" class="nav-link"><i class='bx bx-user'></i>Riders</a>
+    <a href="{% url 'adminpages:booking' %}" class="nav-link"><i class='bx bx-car'></i>Bookings</a>
+    <a href="{% url 'adminpages:payment' %}" class="nav-link"><i class='bx bx-wallet'></i>Payments</a>
+    <a href="{% url 'adminpages:report' %}" class="nav-link"><i class='bx bx-bar-chart'></i>Reports</a>
+    <a href="{% url 'adminpages:settings' %}" class="nav-link"><i class='bx bx-cog'></i>Settings</a>
+    <a href="{% url 'adminpages:dashboard' %}" class="logout-btn"><i class='bx bx-log-out'></i> Logout</a>
+
   </div>
 
   {% block content %}
