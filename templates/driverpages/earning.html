@@ -1,22 +1,55 @@
 {% extends 'driverpages/base.html' %}
 {% block content %}
-    <div class="content" style="grid-template-columns: 1fr;">
-      <section class="earnings">
-        <h3>Earnings Overview</h3>
-        <div style="margin-bottom: 20px;">
-          <p><strong>Total Earnings:</strong> $2,450</p>
-          <p><strong>This Week:</strong> $320</p>
-          <p><strong>This Month:</strong> $1,100</p>
-          <p><strong>Completed Rides:</strong> 88</p>
-        </div>
+<div class="content" style="display: grid; grid-template-columns: 1fr;">
+  <section class="earnings">
+    <h3 style="text-align:center;">Earnings Overview</h3>
+    
+    <div style="margin-bottom: 20px; text-align: center;">
+      <p><strong>Total Earnings:</strong> ${{ total_earnings }}</p>
+      <p><strong>This Week:</strong> ${{ weekly_earnings }}</p>
+      <p><strong>This Month:</strong> ${{ monthly_earnings }}</p>
+      <p><strong>Completed Rides:</strong> {{ completed_rides }}</p>
+    </div>
 
-        <div id="map-container"style="width: 100%; max-width: 700px; margin: auto;">
-           <canvas id="earningsChart"></canvas>
-        
-        
+    <div id="map-container" style="width: 100%; max-width: 700px; margin: auto;">
+      <canvas id="earningsChart"></canvas>
+    </div>
+  </section>
+</div>
 
-          <!-- Replace this with a chart or graph if needed -->
-          <!-- <p style="text-align: center; padding-top: 120px; color: #bbb;">Earnings Graph Placeholder</p> -->
-        </div>
-      </section>
+<!-- Include Chart.js from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('earningsChart').getContext('2d');
+  const earningsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+      datasets: [{
+        label: 'Weekly Earnings ($)',
+        data: [220, 280, 320, 350],  // Replace with real data later
+        backgroundColor: '#4CAF50',
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: false
+        },
+        title: {
+          display: true,
+          text: 'Weekly Earnings'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+</script>
+
 {% endblock content %}
