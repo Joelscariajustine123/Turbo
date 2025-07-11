@@ -1,83 +1,61 @@
 {% extends 'driverpages/base.html' %}
+{% load static %}
+
 {% block content %}
-    <!-- ========== Main Dashboard Content ========== -->
-    <main class="content">
-      
-      <!-- Driver Profile Section -->
-      <section class="driver-profile">
-        <div class="profile-info">
-          <img src="img/driver-icon.jpg" alt="Driver Avatar" class="avatar" />
-          <h2>John Doe</h2>
-          <p class="status">Available</p>
-          <button class="change-status">Change Status</button>
-        </div>
-      </section>
+<main class="profile-container">
+  <section class="profile-card">
+    <div class="avatar-wrapper">
+      {% if driver.profile_photo %}
+          <img src="{{ driver.profile_photo.url }}" alt="Driver Photo" class="avatar">
+      {% else %}
+          <img src="{% static 'driverpages/img/driver-icon.jpg' %}" alt="Default Driver Photo" class="avatar">
+      {% endif %}
 
-      <!-- Ride Requests Section -->
-      <section class="ride-requests">
-        <h3>Ride Requests</h3>
-        <div class="ride-request">
-          <div class="details">
-            <p><strong>Pickup:</strong> Kannur</p>
-            <p><strong>Drop:</strong> Airport</p>
-          </div>
-          <div class="actions">
-            <button class="accept">Accept</button>
-            <button class="decline">Decline</button>
-          </div>
-        </div>
-        <div class="ride-request">
-          <div class="details">
-            <p><strong>Pickup:</strong> City Center</p>
-            <p><strong>Drop:</strong> Park</p>
-          </div>
-          <div class="actions">
-            <button class="accept">Accept</button>
-            <button class="decline">Decline</button>
-          </div>
-        </div>
-      </section>
-
-    
-      
-        <!-- Live Map Section -->
-<section class="map-section">
-  <h3><i class="bx bx-map-pin"></i> Your Current Location</h3>
-  <div id="map-container">
-    <!-- You can embed a real map here using Google Maps or Leaflet.js -->
-    <iframe
-      src="https://maps.google.com/maps?q=Kannur&t=&z=13&ie=UTF8&iwloc=&output=embed"
-      width="100%"
-      height="100%"
-      style="border:0; border-radius: 16px;"
-      allowfullscreen=""
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade">
-    </iframe>
-     
-  </div>
+    </div>
+    <div class="info">
+      <h2>{{ driver.user.full_name }}</h2>
+      <p class="status"><i class="bx bxs-circle green"></i> {{ driver.availability_status|title }}</p>
+      <div class="details">
+        <p><strong>Email:</strong> {{ driver.user.email }}</p>
+        <p><strong>Phone:</strong> {{ driver.user.phone }}</p>
+        <p><strong>License:</strong> {{ driver.license_number }}</p>
+        <p><strong>Vehicle:</strong> {{ driver.vehicle_info }}</p>
+      </div>
+      <div class="buttons">
+        <a href="{% url 'driverpages:edit_profile' %}"><button class="btn edit">Edit Profile</button></a>
+        <!-- <button class="btn upload">Upload Photo</button> -->
+        <form method="POST" enctype="multipart/form-data" style="display:inline-block;">
+          {% csrf_token %}
+          <input type="file" name="profile_photo" accept="image/*" required>
+          <button type="submit" class="btn upload">Upload Photo</button>
+        </form>
+          
+      </div>
+    </div>
+  </section>
+</main>
+<section class="ride-requests">
+  <h3>Ride Requests</h3>
+  {% for ride in ride_requests %}
+    <div class="ride-request">
+      <div class="details">
+        <p><strong>Pickup:</strong> {{ ride.pickup_location }}</p>
+        <p><strong>Drop:</strong> {{ ride.drop_location }}</p>
+      </div>
+      <div class="actions">
+        <form method="post" action="{% url 'accept_ride' ride.id %}">
+          {% csrf_token %}
+          <button type="submit" class="accept">Accept</button>
+        </form>
+        <form method="post" action="{% url 'decline_ride' ride.id %}">
+          {% csrf_token %}
+          <button type="submit" class="decline">Decline</button>
+        </form>
+      </div>
+    </div>
+  {% empty %}
+    <p style="text-align:center;">No ride requests at the moment.</p>
+  {% endfor %}
 </section>
 
-
-
-      <!-- Earnings Summary Section -->
-      <section class="earnings">
-        <h3>Earnings Summary</h3>
-        <div class="earnings-details">
-          <p><strong>Total Earnings:</strong> $350</p>
-          <p><strong>This Week:</strong> $100</p>
-        </div>
-      </section>
-
-      <!-- Ratings Section -->
-      <section class="ratings">
-        <h3>Your Ratings</h3>
-        <div class="ratings-info">
-          <p><strong>Overall Rating:</strong> 4.8</p>
-          <p><strong>Reviews:</strong> 120</p>
-        </div>
-      </section>
-    </main>
-  </div>
-
-{% endblock content %}
+{% endblock %}

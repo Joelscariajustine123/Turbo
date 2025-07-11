@@ -84,7 +84,8 @@ def driversignup(request):
             role='driver'
         )
         messages.success(request, "Driver account created successfully!")
-        return redirect('driver_login')
+        return redirect('account:driver_login')
+
 
     return render(request, 'account/driversignup.html')
 
@@ -135,22 +136,29 @@ def riderlogin(request):
 
     return render(request, 'account/riderlogin.html')
 
-
 def driverlogin(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
 
+        print(f"🔐 Attempt login with email: {email}, password: {password}")
+
         user = authenticate(request, email=email, password=password)
+
+        # if user:
+        #     print(f"✅ Authenticated user: {user.email} ({user.role})")
+        # else:
+        #     print("❌ Authentication failed")
+
         if user is not None and user.role == 'driver':
             login(request, user)
-            print("sucess")
-            return redirect('driverpages:driver_homepage')
+            return redirect('driverpages:homepage')
         else:
             messages.error(request, "Invalid login credentials for Driver")
             return render(request, 'account/driverlogin.html')
 
     return render(request, 'account/driverlogin.html')
+
 
 
 def adminlogin(request):

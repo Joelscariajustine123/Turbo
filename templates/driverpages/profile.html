@@ -1,26 +1,52 @@
 {% extends 'driverpages/base.html' %}
 {% block content %}
-    <main class="profile-container">
-      <section class="profile-card">
-        <div class="avatar-wrapper">
-          <img src="img/driver-icon.jpg" alt="Driver Photo" class="avatar">
-        </div>
-        <div class="info">
-          <h2>John Doe</h2>
-          <p class="status"><i class="bx bxs-circle green"></i> Available</p>
-          <div class="details">
-            <p><strong>Email:</strong> johndoe@example.com</p>
-            <p><strong>Phone:</strong> +91 98765 43210</p>
-            <p><strong>License:</strong> DL-142019009123</p>
-            <p><strong>Vehicle:</strong> Toyota Prius (KA 19 AB 1234)</p>
-          </div>
-          <div class="buttons">
-            <button class="btn edit">Edit Profile</button>
-            <button class="btn upload">Upload Photo</button>
-          </div>
-        </div>
-      </section>
-    </main>
+<main class="content">
+  <section class="settings">
+    <h3><i class="bx bx-cog"></i> Driver Settings</h3>
+    <form class="settings-form" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="driver-name">Full Name</label>
+        <input type="text" id="driver-name" name="full_name" value="{{ driver.user.full_name }}" />
+      </div>
 
+      <div class="form-group">
+        <label for="driver-phone">Phone Number</label>
+        <input type="tel" id="driver-phone" name="phone" value="{{ driver.user.phone }}" />
+      </div>
 
-{% endblock content %}
+      <div class="form-group">
+        <label for="driver-email">Email Address</label>
+        <input type="email" id="driver-email" name="email" value="{{ driver.user.email }}" />
+      </div>
+
+      <div class="form-group">
+        <label for="vehicle-info">Vehicle Info</label>
+        <input type="text" id="vehicle-info" name="vehicle_info" value="{{ driver.vehicle_info }}" />
+      </div>
+
+      <div class="form-group">
+        <label for="availability">Availability Status</label>
+        <select id="availability" name="availability_status">
+          {% for key, label in availability_choices %}
+            <option value="{{ key }}" {% if driver.availability_status == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+        
+
+      <div class="form-group">
+        <label for="profile-photo">Profile Photo</label>
+        <input type="file" id="profile-photo" name="profile_photo">
+        {% if driver.profile_photo %}
+          <img src="{{ driver.profile_photo.url }}" width="100" height="100" style="margin-top: 10px;">
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <button type="submit" class="save-settings">Save Changes</button>
+      </div>
+    </form>
+  </section>
+</main>
+{% endblock %}

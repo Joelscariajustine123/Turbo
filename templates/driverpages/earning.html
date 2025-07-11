@@ -1,9 +1,9 @@
 {% extends 'driverpages/base.html' %}
+{% load static %}
 {% block content %}
 <div class="content" style="display: grid; grid-template-columns: 1fr;">
   <section class="earnings">
     <h3 style="text-align:center;">Earnings Overview</h3>
-    
     <div style="margin-bottom: 20px; text-align: center;">
       <p><strong>Total Earnings:</strong> ${{ total_earnings }}</p>
       <p><strong>This Week:</strong> ${{ weekly_earnings }}</p>
@@ -17,17 +17,21 @@
   </section>
 </div>
 
-<!-- Include Chart.js from CDN -->
+<script id="chartLabels" type="application/json">{{ chart_labels|safe }}</script>
+<script id="chartData" type="application/json">{{ chart_data|safe }}</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+  const labels = JSON.parse(document.getElementById('chartLabels').textContent);
+  const data = JSON.parse(document.getElementById('chartData').textContent);
+
   const ctx = document.getElementById('earningsChart').getContext('2d');
-  const earningsChart = new Chart(ctx, {
+  new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+      labels: labels,
       datasets: [{
         label: 'Weekly Earnings ($)',
-        data: [220, 280, 320, 350],  // Replace with real data later
+        data: data,
         backgroundColor: '#4CAF50',
         borderRadius: 6
       }]
@@ -35,21 +39,16 @@
     options: {
       responsive: true,
       plugins: {
-        legend: {
-          display: false
-        },
+        legend: { display: false },
         title: {
           display: true,
           text: 'Weekly Earnings'
         }
       },
       scales: {
-        y: {
-          beginAtZero: true
-        }
+        y: { beginAtZero: true }
       }
     }
   });
 </script>
-
-{% endblock content %}
+{% endblock %}

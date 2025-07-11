@@ -1,13 +1,10 @@
 from django.urls import path
-from .views import *
+from . import views
 
-app_name = 'driverpages'
-
+app_name='driverpages'
 urlpatterns = [
-    path('', homepage, name='driver_homepage'),
-    path('earnings/', earnings, name='driver_earnings'),
-    path('profile/', profile, name='driver_profile'),
-    path('settings/', setting, name='driver_settings'),
+    path('', views.homepage, name='homepage'),
+    path('earnings/', views.earnings, name='earnings'),
+    path('profile/', views.profile, name='profile'),
+    path('profile/edit/', views.edit_profile, name='edit_profile'),
 ]
-
-
