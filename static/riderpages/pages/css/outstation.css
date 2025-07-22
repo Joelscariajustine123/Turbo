@@ -1,0 +1,105 @@
+*{
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+}
+body{
+    background-color: black;
+    color: white; 
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+}
+.banner{
+    height: 100vh;
+    background-color: black;
+    color: white; /* This makes the text readable on a black background */
+    /* font-family: Arial, sans-serif; */
+    text-align: center;
+    margin: 0 auto; 
+    padding: 0;
+    
+    background-size: cover;background-image: linear-gradient(rgba(0,0,0,0.75),rgba(0,0,0,0.75)),url("../img/vecteezy_woman-driver-hand-adjust-cell-phone-in-stand-holder-for_7311965.jpg");
+    /* background-position: center; */
+    display: flex;
+    
+}
+
+.head{
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    font-size: 2rem;
+    font-weight: 200;
+    color: gray;
+    margin: 10%;
+    padding-top: 60px;
+    margin-left: 480px;
+    
+}
+
+.form{
+    display: flex;
+    flex-direction: column;
+    height: 500px;
+    width: 400px;
+    align-items: center;
+    margin: auto;
+    margin-top: 50px;
+    background-color: rgba(2, 2, 2, 0.5);
+    /* box-shadow: inset -5px -5px rgba(5, 4, 4, 0.5); */
+    border-radius: 25px;
+    position: absolute; /* Position it absolutely */
+    right: 70%;
+    top: 40%;
+    transform: translateY(-50%); 
+}
+.form h1{
+    color: rgb(11, 11, 11);
+    font-size: 2rem;
+    margin: 50px ;
+}
+
+/* box */
+.location{
+    padding: 12px;
+    margin: 20px;
+    width: 65%;
+    border: none;
+    outline: none;
+    border-radius: 20px;
+    background-color: rgba(0,0,0,0.5);
+    box-shadow: inset -3px -3px rgba(0,0,0,0.5);
+    color: white;
+    font-size: 1rem;
+}
+
+#submit{
+    padding: 10px 20px;
+    margin-top: 30px;
+    width: 50%;
+    background-color: rgba(0,0,0,0.75);
+    box-shadow: inset -3px -3px rgba(0,0,0,0.5);
+    color:white;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    font-size: 1rem;
+    
+}
+#submit:hover{
+    cursor: pointer;
+    background-color: rgba(255,255,255,0.5);
+    color: white;
+}
+::placeholder{
+    color: white;
+    opacity: 0.7;
+}
+.form  p{
+    color: white;
+    font-size: 1rem;
+    margin: 50px;
+    text-decoration: underline;
+    cursor: pointer;
+} 

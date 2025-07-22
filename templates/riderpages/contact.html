@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            background-image: linear-gradient(rgba(0,0,0,0.75),rgba(0,0,0,0.75)),url(img/vecteezy_gps-navigation-on-the-smartphone-screen-with_23847262.jpg);
+            background-size: cover;
+            
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #111;
+            /* background-image: url(img/vecteezy_gps-navigation-on-the-smartphone-screen-with_23847262.jpg); */
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        h2 {
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .contact-details {
+            margin: 20px 0;
+            font-size: 16px;
+        }
+
+        .contact-details p {
+            margin: 10px 0;
+        }
+
+        .contact-details i {
+            margin-right: 8px;
+            color: #aaa;
+        }
+
+        /* Contact Form */
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: 350px;
+            width: 590px;
+            margin: auto;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #222;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #888;
+        }
+
+        /* Gray Buttons */
+        button {
+            padding: 12px;
+            border: none;
+            /* background-color: #444; */
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+            text-transform: uppercase;         
+            /* transition: background 0.3s ease; */
+            padding: 10px 20px;
+            margin-top: 30px;
+            width: 100%;
+            background-color: rgba(0,0,0,0.75);
+            
+
+        }
+        
+
+        button:hover {
+            background-color: #666;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Contact Us</h2>
+
+        <div class="contact-details">
+            <p><i class="fas fa-map-marker-alt"></i> anjarakandy 670612, kannur, kerala</p>
+            <p><i class="fas fa-phone"></i> +1 (123) 456-7890</p>
+            <p><i class="fas fa-envelope"></i> Turbocabs@gmail.com</p>
+        </div>
+
+        <form>
+            <input type="text" name="name" placeholder="Your Name" required>
+            <input type="email" name="email" placeholder="Your Email" required>
+            <textarea name="message" rows="4" placeholder="Your Message" required></textarea>
+            <button type="submit">Send Message</button>
+        </form>
+    </div>
+
+</body>
+</html>

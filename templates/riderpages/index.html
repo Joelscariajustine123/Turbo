@@ -1,0 +1,198 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Turbo Cab - User Page</title>
+  <link rel="icon" type="image/png" href="{% static 'riderpages/pages/img/icons8-cab-64.png' %}" />
+  <link rel="stylesheet" href="{% static 'riderpages/pages/css/home.css' %}" />
+  <link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
+  
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <img src="{% static 'riderpages/pages/img/logo1.png' %}" class="logo" alt="Turbo Logo" />
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="Safety.html">Safety</a></li>
+      <li><a href="outstation.html">Outstation</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="services.html">Services</a></li>
+    </ul>
+  </header>
+
+  <!-- Banner / Hero -->
+  <section class="banner">
+    <div class="text-container">
+      <h1>Ride with <span>Turbo</span></h1>
+      <p>Tap. Ride. Arrive.</p>
+    </div>
+    <div class="form">
+      <h2>Book Your Cab</h2><br>
+      <input type="text" name="location" placeholder="Enter location" class="location"><br><br>
+      <input type="text" name="destination" placeholder="Enter Destination" class="location"><br><br>
+      <input type="submit" value="See Price" id="submit" onclick="window.location.href='map.html'">
+      
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="ride">
+    <div class="heading">
+      <span>How It Works</span>
+      <h1>Booking in 3 Easy Steps</h1>
+    </div>
+    <div class="ride-container">
+      <div class="box">
+        <i class='bx bxs-map'></i>
+        <h2>Choose Location</h2>
+        <p>Set your pickup and drop-off points for a smooth ride.
+          input both where you are now (pickup) and where you want
+          to go (drop-off). Nothing complicated,
+         just straight to the point.</p>
+      </div>
+      <div class="box">
+        <i class='bx bxs-taxi'></i>
+        <h2>Pick a Cab</h2>
+        <p>choose your preferred cab type and enjoy a comfortable 
+                    ride.Select from our fleet  of vehicles
+                    tailored to your needs – from budget-friendly options to luxury rides.</p>
+      </div>
+      <div class="box">
+        <i class='bx bx-check-square'></i>
+        <h2>Book Your Ride</h2>
+        <p>Ready to go somewhere?
+                     Book your ride with Turbo in seconds! Just enter your pickup and destination,
+                      choose from our range of vehicles that fit your style
+                       and budget, and hit book.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Safety Section -->
+  <section class="safety">
+    <h1>Your Safety, Our Priority</h1>
+    <p>
+      We take your safety seriously. GPS tracking, verified drivers, 
+      emergency assistance, and regular vehicle checks are part of our standard.
+      The well-being of our customers is above everything else.We are constantly in pursuit of enhancing our 
+      safety measures to ensure every Turbo ride is a pleasant and comfortable experience. 
+       Ready to go somewhere? Book your ride with Turbo in seconds! Just enter your pickup
+      and destination, choose from our range of vehicles that fit your style and budget, and hit book.
+      At Turbo, customer safety is our top priority. We implement rigorous safety measures, including 
+      real-time GPS tracking, verified drivers with background checks, and an in-app emergency button for
+       instant assistance. 
+    </p>
+  </section>
+
+  <!-- Suggestions / Cards -->
+  <section class="cards">
+    <h1>Suggestions</h1>
+    <div class="card"><h2>Reserve</h2><p>Reserve your ride in advance so you can relax on the day of your trip</p></div>
+    <div class="card"><h2>Ride</h2><p>Go anywhere with Turbo.Request a ride,hop in,and go</p></div>
+  </section>
+
+  <!-- Services -->
+  <section class="services">
+    <h2>Our Services</h2>
+    <p class="intro">We provide fast, reliable, and comfortable transportation for every need.</p>
+    <div class="service-item"><h3>Standard Rides</h3><p>Affordable and comfortable rides for everyday travel.</p></div>
+    <div class="service-item"><h3>Corporate Travel</h3><p>Efficient and professional rides tailored for business trips.</p></div>
+    <div class="service-item"><h3>Airport Transfers</h3><p>Timely airport pickups and drop-offs with flight tracking.</p></div>
+    <div class="service-item"><h3>Group Rides</h3><p>Spacious vehicles for families or groups traveling together.</p></div>
+    <div class="service-item"><h3>Scheduled Rides</h3><p>Book your ride in advance and stay on schedule every time.</p></div>
+  </section>
+
+  <!-- Video Content Section -->
+  <section class="video-content-row">
+      <div class="video-side">
+        <video autoplay muted loop playsinline>
+          <source src="{% static 'riderpages/pages/img/4254005-hd_1920_1080_24fps.mp4' %}" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
+      <div class="text-side">
+        <h2> Your Outstation Travel Partner</h2>
+        <p>
+          At Turbo Cab, we’re committed to making your long-distance journeys smooth, safe, 
+        and hassle-free. Whether it’s a weekend getaway, a business trip, or a family vacation, 
+        our outstation cab services are designed to give you comfort, punctuality, and peace of
+         mind. With professional drivers, well-maintained vehicles, and transparent 
+        pricing, Turbo Cab is your trusted ride for every mile ahead.
+        </p>
+      </div>
+    </section>
+  <!-- Reviews -->
+  <section class="full-reviews-section">
+    <h2>What Our Customers Say</h2>
+    <div class="full-review"><p>“Turbo Cab made my weekend trip so relaxing. No delays, polite driver, and a smooth ride throughout.”</p><span>— Anjali R.</span></div>
+    <div class="full-review"><p>“Best outstation experience so far! Affordable, on time, and super easy to book.”</p><span>— Ravi S.</span></div>
+    <div class="full-review"><p>“Driver was professional and the car was spotless. Booking Turbo Cab was a great decision!”</p><span>— Meena & Family</span></div>
+    <div class="full-review"><p>“Booked a cab from Bangalore to Coorg — the ride was smooth, and the driver even suggested great places to stop on the way!”</p><span>— Arvind K.</span></div>
+    <div class="full-review"><p>“Turbo Cab gave us a premium experience at a budget price. Highly recommend for family road trips!”</p><span>— Shweta N.</span></div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <h1>Turbo</h1>
+    <p>Visit Help Center</p><br><br>
+    <div class="footer-container">
+      <div class="footer-column">
+        <h3>Company</h3>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Investors</a></li>
+          <li><a href="#">Our offerings</a></li>
+          <li><a href="#">Careers</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h3>Products</h3>
+        <ul>
+          <li><a href="#">Ride</a></li>
+          <li><a href="#">Drive</a></li>
+          <li><a href="#">Deliver</a></li>
+          <li><a href="#">Gift cards</a></li>
+          <li><a href="#">Uber Health</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h3>Support</h3>
+        <ul>
+          <li><a href="#">Safety</a></li>
+          <li><a href="#">Contact</a></li>
+          <li><a href="#">Insurance</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+            <h3>Travel</h3>
+            <ul>
+              <li><a href="#">Reserve</a></li>
+              <li><a href="#">Airports</a></li>
+              <li><a href="#">Cities</a></li>
+            </ul>
+          </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="social-icons">
+        <a href="#"><img src="{% static 'riderpages/pages/img/facebook.png' %}" alt="Facebook"></a>
+        <a href="#"><img src="{% static 'riderpages/pages/img/twitter.png' %}" alt="Twitter"></a>
+        <a href="#"><img src="{% static 'riderpages/pages/img/youtube.png' %}" alt="YouTube"></a>
+        <a href="#"><img src="{% static 'riderpages/pages/img/linkedin.png' %}" alt="LinkedIn"></a>
+        <a href="#"><img src="{% static 'riderpages/pages/img/1298747_instagram_brand_logo_social media_icon.png' %}" alt="Instagram"></a>
+      </div>
+      <div class="language-location">
+        <span>🌍 English</span>
+        <span>📍 Kannur</span>
+      </div>
+      <p>&copy; 2025 Turbo. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

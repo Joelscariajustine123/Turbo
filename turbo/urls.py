@@ -24,6 +24,7 @@ urlpatterns = [
     path('',include('account.urls')),
     path('adminpages/',include('adminpages.urls')),
     path('driverpages/', include('driverpages.urls')),
+    path('riderpages/', include('riderpages.urls')),
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

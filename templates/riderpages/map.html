@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Turbo Cab - Book a Ride</title>
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <!-- Boxicons + Google Font -->
+  <link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="pages/css/map.css" />
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h2>Book Your Ride</h2>
+      <label>Pickup Location</label>
+      <input type="text" placeholder="Click on map to select" id="pickup" readonly />
+
+      <label>Drop Location</label>
+      <input type="text" placeholder="Enter drop..." id="drop" />
+
+      <label>Select Car</label>
+      <select id="car">
+        <option value="sedan">🚘 Sedan</option>
+        <option value="suv">🚙 SUV</option>
+        <option value="bike">🏍️ Bike</option>
+        <option value="auto">🛺 Auto</option>
+      </select>
+
+      <button id="book-btn">Confirm Booking</button>
+    </div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+  </div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+    // Initialize map centered on Kannur
+    const map = L.map('map').setView([11.8745, 75.3704], 13);
+
+    // Add map tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Custom car icon
+    const carIcon = L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/744/744465.png', // Replace with your own if needed
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+      popupAnchor: [0, -15]
+    });
+
+
+    let carMarker = null;
+
+    // When user clicks on map
+    map.on('click', function (e) {
+      const latlng = e.latlng;
+
+      // Remove previous marker if any
+      if (carMarker) {
+        map.removeLayer(carMarker);
+      }
+
+      // Place car marker
+      carMarker = L.marker([latlng.lat, latlng.lng], { icon: carIcon })
+        .addTo(map)
+        .bindPopup('Pickup location')
+        .openPopup();
+
+      // Autofill pickup input
+      document.getElementById('pickup').value = `Lat: ${latlng.lat.toFixed(4)}, Lng: ${latlng.lng.toFixed(4)}`;
+    });
+  </script>
+</body>
+</html>

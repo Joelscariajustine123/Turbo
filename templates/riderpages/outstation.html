@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Turbo Cab – Outstation Rides</title>
+  <style>
+    :root {
+      --primary-color: #cfc9c9;
+      --bg-color: #0e0d0d;
+      --text-color: #f0f0f0;
+      --subtle-text: #070707;
+      --card-bg: #040404;
+      --border-color: #dbd6d6;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg-color);
+      color: var(--text-color);
+      background-image:  linear-gradient(rgba(0,0,0,0.75),rgba(0,0,0,0.75)),url(../pages/img/vecteezy_woman-driver-hand-adjust-cell-phone-in-stand-holder-for_7311965.jpg);
+      background-size: cover;
+      background-position: center;
+      width: 100%;
+    /* height: 100vh; */
+    }
+
+    header {
+      background-color:rgba(0,0,0,0.35);
+      color: #eadede;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+    }
+
+    .section {
+      padding: 2rem 1rem;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .section h2 {
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+    }
+
+    .features ul, .routes ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .features li::before {
+      content: "✔️";
+      margin-right: 0.5rem;
+    }
+
+    .routes li::before {
+      content: "🛣️";
+      margin-right: 0.5rem;
+    }
+
+    .packages table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background: var(--card-bg);
+    }
+
+    .packages th, .packages td {
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      text-align: left;
+    }
+
+    .packages th {
+      background: #2a2a2a;
+      color: var(--text-color);
+    }
+
+    .cta {
+      text-align: center;
+      padding: 2rem 1rem;
+      background: #1a1a1a;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .cta button {
+      background: var(--primary-color);
+      color: #000;
+      padding: 1rem 2rem;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .cta button:hover {
+      background: #484848;
+    }
+
+    .reviews blockquote {
+      margin: 1rem 0;
+      padding: 1rem;
+      background: #1f1f1f;
+      border-left: 5px solid var(--primary-color);
+    }
+
+    footer {
+      background: #0d0d0d;
+      color: var(--subtle-text);
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.8rem;
+      }
+
+      .packages table, .packages th, .packages td {
+        font-size: 0.9rem;
+      }
+
+      .cta button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Turbo Cab – Outstation Rides</h1>
+    <p>Reliable. Affordable. Always Available.</p>
+  </header>
+
+  <div class="section features">
+    <h2>Why Choose Turbo Cab?</h2>
+    <ul>
+      <li>24/7 Availability</li>
+      <li>Clean & Comfortable Cabs</li>
+      <li>Verified, Professional Drivers</li>
+      <li>Transparent Pricing</li>
+      <li>One-Way & Round-Trip Options</li>
+    </ul>
+  </div>
+
+  <div class="section routes">
+    <h2>Popular Routes</h2>
+    <ul>
+      <li>Bangalore ⇌ Mysore</li>
+      <li>Delhi ⇌ Agra</li>
+      <li>Mumbai ⇌ Lonavala</li>
+      <li>Chennai ⇌ Pondicherry</li>
+      <li>Hyderabad ⇌ Warangal</li>
+    </ul>
+  </div>
+
+  <div class="section packages">
+    <h2>Outstation Packages</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Package Type</th>
+          <th>Inclusions</th>
+          <th>Ideal For</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>One-Way Trip</td>
+          <td>Pickup & drop, tolls, driver charges</td>
+          <td>Intercity travel, airport</td>
+        </tr>
+        <tr>
+          <td>Round Trip</td>
+          <td>2-way travel, night halt, full service</td>
+          <td>Family trips, tours</td>
+        </tr>
+        <tr>
+          <td>Multi-Day Trip</td>
+          <td>Custom plan, multi-city, flexible stops</td>
+          <td>Road trips, holidays</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section reviews">
+    <h2>What Our Customers Say</h2>
+    <blockquote>
+      “Turbo Cab made our weekend trip smooth and stress-free!” – <strong>Anjali M.</strong>
+    </blockquote>
+    <blockquote>
+      “On-time, clean car, polite driver. Will book again.” – <strong>Rakesh P.</strong>
+    </blockquote>
+  </div>
+
+  <div class="cta">
+    <h2>Ready for Your Next Trip?</h2>
+    <p>Book via Website or Call: <strong>1800-XXX-XXXX</strong></p>
+    <button>Book Now</button>
+  </div>
+
+  <footer>
+    &copy; 2025 Turbo Cab Services. All rights reserved.
+  </footer>
+
+</body>
+</html>
+

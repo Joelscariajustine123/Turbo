@@ -4,23 +4,6 @@ from django.shortcuts import render
 def first(request):
     return render(request,'account/usertype.html')
 
-# def riderlogin(request):
-#     return render(request,'account/riderlogin.html')
-
-# def dirverlogin(request):
-#     return render(request,'account/driverlogin.html')
-
-# def adminlogin(request):
-#     return render(request,'account/adminlogin.html')
-
-# def ridersignup(request):
-#     return render(request,'account/ridersignup.html')
-
-# def driversignup(request):
-#     return render(request,'account/driversignup.html')
-
-# def adminsignup(request):
-#     return render(request,'account/adminsignup.html')
 
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -55,7 +38,7 @@ def ridersignup(request):
             role='rider'
         )
         messages.success(request, "Rider account created successfully!")
-        return redirect('rider_login')
+        return redirect('account:rider_login')
 
     return render(request, 'account/ridersignup.html')
 
@@ -120,20 +103,48 @@ def adminsignup(request):
 
 
 # ---------- LOGIN VIEWS ----------
+# def riderlogin(request):
+#     if request.method == 'POST':
+#         email = request.POST.get('email')
+#         password = request.POST.get('password')
+
+#         user = authenticate(request, email=email, password=password)
+#         if user is not None and user.role == 'rider':
+#             login(request, user)
+#             return redirect('riderpages:index')  # define this
+#         else:
+#             messages.error(request, "Invalid login credentials for Rider")
+#             return render(request, 'account/riderlogin.html')
+#     messages.error(request, "Invalid login credentials for Rider")
+#     return render(request, 'account/riderlogin.html')
+
+from django.contrib import messages
+from django.contrib.auth import authenticate, login
+from django.shortcuts import render, redirect
 
 def riderlogin(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
 
-        user = authenticate(request, email=email, password=password)
-        if user is not None and user.role == 'rider':
-            login(request, user)
-            return redirect('rider:rider_dashboard')  # define this
-        else:
-            messages.error(request, "Invalid login credentials for Rider")
-            return render(request, 'account/riderlogin.html')
+        print(f"🔐 Attempt login with email: {email}, password: {password}")
 
+        user = authenticate(request, email=email, password=password)
+
+        # Debugging authentication
+        # if user:
+        #     print(f"✅ Authenticated user: {user.email} ({user.role})")
+        # else:
+        #     print("❌ Authentication failed")
+
+        if user is not None and hasattr(user, 'role') and user.role == 'rider':
+            login(request, user)
+            return redirect('riderpages:index')  # Ensure this URL is defined
+        else:
+            messages.error(request, "Invalid email or password for Rider")
+            return render(request, 'account/riderlogin.html')
+    
+    # For GET requests, render the login page without an error message
     return render(request, 'account/riderlogin.html')
 
 def driverlogin(request):
