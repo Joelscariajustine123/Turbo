@@ -1,29 +1,6 @@
+{% extends 'riderpages/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Turbo Cab - User Page</title>
-  <link rel="icon" type="image/png" href="{% static 'riderpages/pages/img/icons8-cab-64.png' %}" />
-  <link rel="stylesheet" href="{% static 'riderpages/pages/css/home.css' %}" />
-  <link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
-  
-</head>
-<body>
-
-  <!-- Navigation -->
-  <header class="navbar">
-    <img src="{% static 'riderpages/pages/img/logo1.png' %}" class="logo" alt="Turbo Logo" />
-    <ul>
-      <li><a href="index.html">Home</a></li>
-      <li><a href="Safety.html">Safety</a></li>
-      <li><a href="outstation.html">Outstation</a></li>
-      <li><a href="contact.html">Contact</a></li>
-      <li><a href="services.html">Services</a></li>
-    </ul>
-  </header>
-
+{% block content %}
   <!-- Banner / Hero -->
   <section class="banner">
     <div class="text-container">
@@ -136,63 +113,4 @@
   </section>
 
   <!-- Footer -->
-  <footer class="footer">
-    <h1>Turbo</h1>
-    <p>Visit Help Center</p><br><br>
-    <div class="footer-container">
-      <div class="footer-column">
-        <h3>Company</h3>
-        <ul>
-          <li><a href="#">About</a></li>
-          <li><a href="#">Careers</a></li>
-          <li><a href="#">Investors</a></li>
-          <li><a href="#">Our offerings</a></li>
-          <li><a href="#">Careers</a></li>
-        </ul>
-      </div>
-      <div class="footer-column">
-        <h3>Products</h3>
-        <ul>
-          <li><a href="#">Ride</a></li>
-          <li><a href="#">Drive</a></li>
-          <li><a href="#">Deliver</a></li>
-          <li><a href="#">Gift cards</a></li>
-          <li><a href="#">Uber Health</a></li>
-        </ul>
-      </div>
-      <div class="footer-column">
-        <h3>Support</h3>
-        <ul>
-          <li><a href="#">Safety</a></li>
-          <li><a href="#">Contact</a></li>
-          <li><a href="#">Insurance</a></li>
-        </ul>
-      </div>
-      <div class="footer-column">
-            <h3>Travel</h3>
-            <ul>
-              <li><a href="#">Reserve</a></li>
-              <li><a href="#">Airports</a></li>
-              <li><a href="#">Cities</a></li>
-            </ul>
-          </div>
-        </div>
-    </div>
-    <div class="footer-bottom">
-      <div class="social-icons">
-        <a href="#"><img src="{% static 'riderpages/pages/img/facebook.png' %}" alt="Facebook"></a>
-        <a href="#"><img src="{% static 'riderpages/pages/img/twitter.png' %}" alt="Twitter"></a>
-        <a href="#"><img src="{% static 'riderpages/pages/img/youtube.png' %}" alt="YouTube"></a>
-        <a href="#"><img src="{% static 'riderpages/pages/img/linkedin.png' %}" alt="LinkedIn"></a>
-        <a href="#"><img src="{% static 'riderpages/pages/img/1298747_instagram_brand_logo_social media_icon.png' %}" alt="Instagram"></a>
-      </div>
-      <div class="language-location">
-        <span>🌍 English</span>
-        <span>📍 Kannur</span>
-      </div>
-      <p>&copy; 2025 Turbo. All rights reserved.</p>
-    </div>
-  </footer>
-
-</body>
-</html>
+{% endblock %}
