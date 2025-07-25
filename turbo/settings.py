@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'account',
     'adminpages',
     'driverpages',
+    'riderpages',
 ]
 
 MIDDLEWARE = [
