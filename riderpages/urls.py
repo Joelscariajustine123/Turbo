@@ -12,4 +12,5 @@ urlpatterns = [
     path('contact/', contact, name='contact'),
     path('services/', services, name='services'),
     path('map/', map_view, name='map_view'), # URL for the booking map page
+    path('booking/<int:ride_id>/', booking_confirmation, name='booking_confirmation'),
 ]

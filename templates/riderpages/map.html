@@ -1,89 +1,415 @@
+{% extends 'riderpages/base.html' %}
+{% load static %}
+
+{% block content %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Turbo Cab - Book a Ride</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Turbo Cab - Book a Ride</title>
 
-  <!-- Leaflet Map CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Leaflet Map & Plugin CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <!-- Boxicons + Google Font -->
-  <link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+        /* Base layout for the app container */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            font-family: 'Inter', sans-serif;
+        }
 
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="pages/css/map.css" />
+        /* Sidebar set to 50% width */
+        .sidebar {
+            width: 50%;
+            background-color: #111;
+            color: #fff;
+            padding: 2rem; 
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+        }
+        
+        .sidebar h2 {
+            font-size: 1.4rem;
+            margin-bottom: 2rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .sidebar form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        .sidebar form input,
+        .sidebar form select {
+            width: 100%;
+            height: 48px;
+            padding: 0 0.8rem;
+            line-height: 48px;
+            border: 1px solid #444;
+            background-color: #2a2a2a;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+        }
+        
+        .search-container {
+            position: relative;
+            margin-bottom: 1.2rem;
+        }
+        
+        .search-container input {
+            padding-right: 50px; 
+            margin-bottom: 0;
+        }
+        
+        .search-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 50px;
+            border: none;
+            background: transparent;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+        
+        .search-btn:hover {
+            color: #fff;
+        }
+
+        .ride-summary {
+            background-color: #2a2a2a;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.2rem;
+            border-left: 3px solid #007bff;
+        }
+
+        .ride-summary p {
+            margin: 0.6rem 0;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1rem;
+        }
+        
+        .ride-summary span {
+            font-weight: 700;
+        }
+
+        #book-btn {
+            width: 100%;
+            padding: 1rem;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 0.5rem;
+        }
+
+        #book-btn:hover {
+            background-color: #0056b3;
+        }
+
+        #map {
+            flex-grow: 1; 
+            height: 100%;
+            cursor: crosshair;
+        }
+        
+        .leaflet-routing-container {
+            display: none;
+        }
+
+        .autocomplete-container {
+            position: relative;
+        }
+
+        .suggestions-list {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #3a3a3a;
+            border: 1px solid #555;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 9999;
+            margin-top: -1.2rem;
+        }
+
+        .suggestion-item {
+            padding: 0.8rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #555;
+        }
+        
+        .suggestion-item.message {
+            cursor: default;
+            color: #999;
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:not(.message):hover {
+            background-color: #007bff;
+        }
+
+    </style>
 </head>
 <body>
-  <div class="app-container">
-    
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <h2>Book Your Ride</h2>
-      <label>Pickup Location</label>
-      <input type="text" placeholder="Click on map to select" id="pickup" readonly />
+    <div class="app-container">
+        
+        <div class="sidebar">
+            <form method="POST" action="{% url 'riderpages:map_view' %}">
+                {% csrf_token %}
+                <h2>BOOK YOUR RIDE</h2>
+                
+                <label>Pickup</label>
+                <input type="text" id="pickup" name="pickup" value="Getting your location..." readonly required style="margin-bottom: 1.2rem;" />
 
-      <label>Drop Location</label>
-      <input type="text" placeholder="Enter drop..." id="drop" />
+                <label>Drop</label>
+                <div class="autocomplete-container">
+                    <div class="search-container">
+                        <input type="text" id="drop" name="drop" placeholder="Type to search for a place..." required autocomplete="off" />
+                        <button type="button" id="search-btn" class="search-btn">🔍</button>
+                    </div>
+                    <div id="suggestions-box" class="suggestions-list"></div>
+                </div>
+                
+                <label>Estimated Details</label>
+                <div id="summary" class="ride-summary">
+                    <p>Distance: <span id="distance">--</span> km</p>
+                    <p>Fare: <span>₹<span id="fare">--</span></span></p>
+                </div>
+                
+                <!-- NEW: Hidden inputs to send distance and fare to the server -->
+                <input type="hidden" name="distance" id="hidden-distance" />
+                <input type="hidden" name="fare" id="hidden-fare" />
 
-      <label>Select Car</label>
-      <select id="car">
-        <option value="sedan">🚘 Sedan</option>
-        <option value="suv">🚙 SUV</option>
-        <option value="bike">🏍️ Bike</option>
-        <option value="auto">🛺 Auto</option>
-      </select>
+                <label>Select Vehicle</label>
+                <select id="car" name="car">
+                    <option value="sedan" data-rate="15">🚘 Sedan (₹15/km)</option>
+                    <option value="suv" data-rate="20">🚙 SUV (₹20/km)</option>
+                    <option value="bike" data-rate="8">🏍️ Bike (₹8/km)</option>
+                    <option value="auto" data-rate="12">🛺 Auto (₹12/km)</option>
+                </select>
 
-      <button id="book-btn">Confirm Booking</button>
+                <button type="submit" id="book-btn">CONFIRM BOOKING</button>
+            </form>
+        </div>
+
+        <div id="map"></div>
     </div>
 
-    <!-- Map -->
-    <div id="map"></div>
+    <!-- Leaflet JS Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
 
-  </div>
+    <script>
+        const map = L.map('map').setView([11.8745, 75.3704], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-  <!-- Leaflet Map JS -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+        const carSelect = document.getElementById('car');
+        const distanceEl = document.getElementById('distance');
+        const fareEl = document.getElementById('fare');
+        const pickupInput = document.getElementById('pickup');
+        const dropInput = document.getElementById('drop');
+        const suggestionsBox = document.getElementById('suggestions-box');
+        const searchBtn = document.getElementById('search-btn');
+        // NEW: Get hidden input elements
+        const hiddenDistanceInput = document.getElementById('hidden-distance');
+        const hiddenFareInput = document.getElementById('hidden-fare');
 
-  <script>
-    // Initialize map centered on Kannur
-    const map = L.map('map').setView([11.8745, 75.3704], 13);
+        let pickupLatLng = null;
+        let dropLatLng = null;
+        let routingControl = null;
+        let pickupMarker = null;
+        let dropMarker = null;
+        let geocodeTimeout;
 
-    // Add map tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+        map.locate({ setView: true, maxZoom: 16 });
 
-    // Custom car icon
-    const carIcon = L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/744/744465.png', // Replace with your own if needed
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
-      popupAnchor: [0, -15]
-    });
+        async function reverseGeocode(latlng) {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                return data.display_name || `Lat: ${latlng.lat.toFixed(4)}`;
+            } catch (error) {
+                console.error("Reverse geocoding failed:", error);
+                return `Lat: ${latlng.lat.toFixed(4)}`;
+            }
+        }
+        
+        map.on('locationfound', async function(e) {
+            pickupLatLng = e.latlng;
+            if (pickupMarker) map.removeLayer(pickupMarker);
+            pickupMarker = L.marker(pickupLatLng).addTo(map).bindPopup("Your Location").openPopup();
+            pickupInput.value = await reverseGeocode(pickupLatLng);
+        });
 
+        map.on('locationerror', () => {
+             pickupInput.value = "Location access denied.";
+        });
+        
+        map.on('click', async function(e) {
+            if (!pickupLatLng) return;
+            dropLatLng = e.latlng;
+            suggestionsBox.style.display = 'none';
+            
+            if (dropMarker) dropMarker.setLatLng(dropLatLng);
+            else {
+                dropMarker = L.marker(dropLatLng, { draggable: true }).addTo(map);
+                dropMarker.on('dragend', (e) => handleDropMarkerDrag(e));
+            }
+            dropInput.value = await reverseGeocode(dropLatLng);
+            calculateAndShowRoute();
+        });
+        
+        async function handleDropMarkerDrag(e){
+            dropLatLng = e.target.getLatLng();
+            dropInput.value = await reverseGeocode(dropLatLng);
+            calculateAndShowRoute();
+        }
+        
+        async function triggerSearch() {
+            const query = dropInput.value;
+            if (!query) return;
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&viewbox=74.0,8.0,78.0,13.0&bounded=1`;
+            try {
+                const response = await fetch(url);
+                const results = await response.json();
+                if (results && results.length > 0) {
+                    selectSuggestion(results[0]);
+                } else {
+                    alert('Location not found.');
+                }
+            } catch (error) {
+                alert('Search failed.');
+            }
+        }
 
-    let carMarker = null;
+        function selectSuggestion(result) {
+            dropInput.value = result.display_name;
+            dropLatLng = L.latLng(result.lat, result.lon);
+            suggestionsBox.style.display = 'none';
+            if (dropMarker) dropMarker.setLatLng(dropLatLng);
+            else {
+                dropMarker = L.marker(dropLatLng, { draggable: true }).addTo(map);
+                dropMarker.on('dragend', (e) => handleDropMarkerDrag(e));
+            }
+            map.fitBounds([pickupLatLng, dropLatLng], { padding: [50, 50] });
+            calculateAndShowRoute();
+        }
 
-    // When user clicks on map
-    map.on('click', function (e) {
-      const latlng = e.latlng;
+        dropInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                triggerSearch();
+                return;
+            }
+            const query = e.target.value;
+            clearTimeout(geocodeTimeout);
+            if (query.length < 3) {
+                suggestionsBox.innerHTML = '';
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+            geocodeTimeout = setTimeout(async () => {
+                suggestionsBox.innerHTML = '<div class="suggestion-item message">Searching...</div>';
+                suggestionsBox.style.display = 'block';
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&viewbox=74.0,8.0,78.0,13.0&bounded=1`;
+                try {
+                    const response = await fetch(url);
+                    const results = await response.json();
+                    suggestionsBox.innerHTML = '';
+                    if (results && results.length > 0) {
+                        results.forEach(result => {
+                            const item = document.createElement('div');
+                            item.className = 'suggestion-item';
+                            item.textContent = result.display_name;
+                            item.onclick = () => selectSuggestion(result);
+                            suggestionsBox.appendChild(item);
+                        });
+                    } else {
+                        suggestionsBox.innerHTML = '<div class="suggestion-item message">No results found.</div>';
+                    }
+                } catch (error) {
+                     suggestionsBox.innerHTML = '<div class="suggestion-item message">Search failed.</div>';
+                }
+            }, 350);
+        });
+        
+        searchBtn.addEventListener('click', triggerSearch);
 
-      // Remove previous marker if any
-      if (carMarker) {
-        map.removeLayer(carMarker);
-      }
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.autocomplete-container')) {
+                suggestionsBox.style.display = 'none';
+            }
+        });
 
-      // Place car marker
-      carMarker = L.marker([latlng.lat, latlng.lng], { icon: carIcon })
-        .addTo(map)
-        .bindPopup('Pickup location')
-        .openPopup();
+        function calculateAndShowRoute() {
+            if (!pickupLatLng || !dropLatLng) return;
+            if (routingControl) map.removeControl(routingControl);
+            routingControl = L.Routing.control({
+                waypoints: [pickupLatLng, dropLatLng],
+                lineOptions: { styles: [{ color: '#007bff', opacity: 0.8, weight: 6 }] },
+                createMarker: () => null, show: false, addWaypoints: false
+            }).addTo(map);
+            routingControl.on('routesfound', (e) => updateFare(e.routes[0].summary.totalDistance));
+        }
+        
+        function updateFare(distanceMeters) {
+            const distanceKm = (distanceMeters / 1000).toFixed(2);
+            const selectedCarOption = carSelect.options[carSelect.selectedIndex];
+            const ratePerKm = parseFloat(selectedCarOption.getAttribute('data-rate'));
+            const baseFare = 50;
+            const estimatedFare = (distanceKm * ratePerKm) + baseFare;
+            
+            distanceEl.textContent = distanceKm;
+            fareEl.textContent = estimatedFare.toFixed(2);
+            
+            // NEW: Update the hidden inputs
+            hiddenDistanceInput.value = distanceKm;
+            hiddenFareInput.value = estimatedFare.toFixed(2);
+        }
 
-      // Autofill pickup input
-      document.getElementById('pickup').value = `Lat: ${latlng.lat.toFixed(4)}, Lng: ${latlng.lng.toFixed(4)}`;
-    });
-  </script>
+        carSelect.addEventListener('change', function() {
+            if (routingControl && routingControl._routes && routingControl._routes.length > 0) {
+                updateFare(routingControl._routes[0].summary.totalDistance);
+            }
+        });
+    </script>
 </body>
 </html>
+{% endblock %}

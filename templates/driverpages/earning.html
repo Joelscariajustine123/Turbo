@@ -5,17 +5,21 @@
   <section class="earnings">
     <h3 style="text-align:center;">Earnings Overview</h3>
     <div style="margin-bottom: 20px; text-align: center;">
-      <p><strong>Total Earnings:</strong> ${{ total_earnings }}</p>
-      <p><strong>This Week:</strong> ${{ weekly_earnings }}</p>
-      <p><strong>This Month:</strong> ${{ monthly_earnings }}</p>
+      <p><strong>Total Earnings:</strong> ₹{{ total_earnings|floatformat:2 }}</p>
+      <p><strong>This Week:</strong> ₹{{ weekly_earnings|floatformat:2 }}</p>
+      <p><strong>This Month:</strong> ₹{{ monthly_earnings|floatformat:2 }}</p>
       <p><strong>Completed Rides:</strong> {{ completed_rides }}</p>
     </div>
 
-    <div id="map-container" style="width: 100%; max-width: 700px; margin: auto;">
+    <div id="map-container" style="width: 100%; max-width: 800px; margin: auto; padding: 1rem; background-color: #2c2c2c; border-radius: 8px; position: relative;">
       <canvas id="earningsChart"></canvas>
+      <div id="no-data-message" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 1.2rem;">
+        No earnings data to display yet.
+      </div>
     </div>
   </section>
 </div>
+
 
 <script id="chartLabels" type="application/json">{{ chart_labels|safe }}</script>
 <script id="chartData" type="application/json">{{ chart_data|safe }}</script>
@@ -23,32 +27,63 @@
 <script>
   const labels = JSON.parse(document.getElementById('chartLabels').textContent);
   const data = JSON.parse(document.getElementById('chartData').textContent);
+  const noDataMessage = document.getElementById('no-data-message');
+  const earningsChartCanvas = document.getElementById('earningsChart');
 
-  const ctx = document.getElementById('earningsChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Weekly Earnings ($)',
-        data: data,
-        backgroundColor: '#4CAF50',
-        borderRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        title: {
-          display: true,
-          text: 'Weekly Earnings'
-        }
+  if (data && data.length > 0) {
+    const ctx = earningsChartCanvas.getContext('2d');
+    new Chart(ctx, {
+      // --- FIX: Changed chart type to 'bar' ---
+      type: 'bar', 
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Daily Earnings (₹)',
+          data: data,
+          backgroundColor: 'rgba(76, 175, 80, 0.7)', // Solid green for bars
+          borderColor: 'rgba(76, 175, 80, 1)',
+          borderWidth: 1,
+          borderRadius: 4,
+          barThickness: 50,
+        }]
       },
-      scales: {
-        y: { beginAtZero: true }
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: 'Daily Earnings',
+            color: '#FFFFFF',
+            font: { size: 16 }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Earnings (₹)',
+              color: '#4CAF50'
+            },
+            ticks: { color: '#FFFFFF' },
+            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Date',
+              color: '#4CAF50'
+            },
+            ticks: { color: '#FFFFFF' },
+            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+          }
+        }
       }
-    }
-  });
+    });
+  } else {
+    earningsChartCanvas.style.display = 'none';
+    noDataMessage.style.display = 'block';
+  }
 </script>
 {% endblock %}
