@@ -60,7 +60,7 @@ def edit_rider(request, rider_id):
         if form.is_valid():
             form.save()
             messages.success(request, "Rider updated successfully.")
-            return redirect('rider')
+            return redirect('adminpages:rider')
     else:
         form = EditRiderForm(instance=rider)
     return render(request, 'adminpages/edit_rider.html', {'form': form})

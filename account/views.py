@@ -73,29 +73,43 @@ def driversignup(request):
     return render(request, 'account/driversignup.html')
 
 
+# account/views.py
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.hashers import make_password # No longer needed if using create_user
+from .models import CustomUser
+
 def adminsignup(request):
     if request.method == 'POST':
         full_name = request.POST.get('full_name')
         username = request.POST.get('username')
         email = request.POST.get('email')
-        password1 = request.POST.get('password1')
+        password = request.POST.get('password1')
         password2 = request.POST.get('password2')
 
-        if password1 != password2:
+        if password != password2:
             messages.error(request, "Passwords do not match")
-            return render(request, 'account/adminsignup.html')
+            return redirect('account:adminsignup') # Use redirect
+
+        # --- FIX: Added username check ---
+        if CustomUser.objects.filter(username=username).exists():
+            messages.error(request, "Username is already taken. Please choose another one.")
+            return redirect('account:adminsignup') # Use redirect
 
         if CustomUser.objects.filter(email=email).exists():
-            messages.error(request, "Email already exists")
-            return render(request, 'account/adminsignup.html')
+            messages.error(request, "An account with this email already exists.")
+            return redirect('account:adminsignup') # Use redirect
 
-        user = CustomUser.objects.create(
+        # --- BEST PRACTICE: Use create_user to handle password hashing ---
+        user = CustomUser.objects.create_user(
             full_name=full_name,
             email=email,
             username=username,
-            password=make_password(password1),
+            password=password, # create_user handles the hashing
             role='admin'
         )
+        
         messages.success(request, "Admin account created successfully!")
         return redirect('account:admin_login')
 
