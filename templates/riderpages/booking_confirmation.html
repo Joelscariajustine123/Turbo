@@ -136,23 +136,23 @@
 </div>
 
 <!-- UPI Payment Modal -->
-<div id="upi-modal" class="modal-overlay">
-    <div class="modal-content">
-        <h4>Scan to Pay with UPI</h4>
-        
-        <!-- QR Code will be generated here -->
-        <div id="qrcode" class="qr-code"></div>
-        
-        <p class="upi-id">Or pay to: <strong>joeljustine@ybl</strong></p>
-        
-        <!-- Transaction ID Input Field -->
-        <input type="text" id="transaction-id-input" placeholder="Enter Transaction ID" required>
-        
-        <p class="payment-note">After paying, enter the Transaction ID from your UPI app and click confirm.</p>
-        
-        <button type="button" id="confirm-upi-payment" class="payment-btn">Confirm Payment</button>
+    <div id="upi-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h4>Scan to Pay with UPI</h4>
+            
+            <!-- QR Code will be generated here -->
+            <div id="qrcode" class="qr-code"></div>
+            
+            <p class="upi-id">Or pay to: <strong>joeljustine@ybl</strong></p>
+            
+            <!-- Transaction ID Input Field -->
+            <input type="text" id="transaction-id-input" placeholder="Enter Transaction ID" required>
+            
+            <p class="payment-note">After paying, enter the Transaction ID from your UPI app and click confirm.</p>
+            
+            <button type="button" id="confirm-upi-payment" class="payment-btn">Confirm Payment</button>
+        </div>
     </div>
-</div>
 
 <!-- QR Code Generator Library -->
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
