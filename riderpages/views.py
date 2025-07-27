@@ -46,24 +46,30 @@ def map_view(request):
 
     # For GET requests, just show the map page
     return render(request, 'riderpages/map.html')
-
 @login_required
 def booking_confirmation(request, ride_id):
-    # Fetch the specific ride object, or return a 404 error if not found
     ride = get_object_or_404(Ride, id=ride_id, user=request.user)
 
-    # Handle the payment form submission
     if request.method == 'POST':
         payment_method = request.POST.get('payment_method')
-        # In a real app, you would process the payment here.
-        # For this simulation, we just confirm the ride.
-        ride.status = 'CONFIRMED'
-        ride.save()
-        
-        messages.success(request, f"Your ride has been confirmed! Payment method: {payment_method.title()}. A driver will be assigned shortly.")
-        # Redirect to the home page or a 'my rides' page after confirmation
-        return redirect('riderpages:index')
+        transaction_id = request.POST.get('transaction_id') # Get the transaction ID
 
-    # For GET requests, display the confirmation page
+        # --- FIX: Save the payment details to the ride object ---
+        if payment_method:
+            ride.payment_method = payment_method.upper() # e.g., 'CASH' or 'UPI'
+            ride.status = 'CONFIRMED'
+            
+            # Save the transaction ID only if the method is UPI
+            if payment_method == 'upi' and transaction_id:
+                ride.transaction_id = transaction_id
+
+            ride.save() # Save all the changes
+            
+            messages.success(request, f"Your ride has been confirmed! Payment method: {payment_method.title()}. A driver will be assigned shortly.")
+            return redirect('riderpages:index')
+        else:
+            # Handle case where payment method is not provided
+            messages.error(request, 'Please select a payment method.')
+
     context = {'ride': ride}
     return render(request, 'riderpages/booking_confirmation.html', context)

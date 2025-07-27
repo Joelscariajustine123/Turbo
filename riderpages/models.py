@@ -18,7 +18,10 @@ STATUS_CHOICES = (
     ("COMPLETED", "Completed"),   # Ride finished
     ("CANCELLED", "Cancelled"),   # Ride cancelled
 )
-
+PAYMENT_METHOD_CHOICES = (
+    ("UPI", "UPI"),
+    ("CASH", "Cash"),
+)
 class Ride(models.Model):
     # Rider-related fields
     user = models.ForeignKey(
@@ -41,7 +44,12 @@ class Ride(models.Model):
         null=True, 
         blank=True
     )
-    
+    payment_method = models.CharField(
+        max_length=20, 
+        choices=PAYMENT_METHOD_CHOICES, 
+        null=True, 
+        blank=True
+    )
     # Status and Timestamps
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True)

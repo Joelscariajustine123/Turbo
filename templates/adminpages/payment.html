@@ -1,50 +1,42 @@
 {% extends 'adminpages/base.html' %}
 {% block content %}
-<!-- Main content -->
-  <div class="main">
-    <div class="header">
-      <h1>Payment Records</h1>
-      <p>💳 Showing recent transactions</p>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Rider</th>
-          <th>Amount</th>
-          <th>Method</th>
-          <th>Date</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>1</td>
-          <td>Anjali R.</td>
-          <td>₹1,200</td>
-          <td>UPI</td>
-          <td>2025-06-29</td>
-          <td class="paid">Paid</td>
-        </tr>
-        <tr>
-          <td>2</td>
-          <td>Ravi Kumar</td>
-          <td>₹950</td>
-          <td>Credit Card</td>
-          <td>2025-06-30</td>
-          <td class="paid">Paid</td>
-        </tr>
-        <tr>
-          <td>3</td>
-          <td>Shweta N.</td>
-          <td>₹1,650</td>
-          <td>Cash</td>
-          <td>2025-07-01</td>
-          <td class="pending">Pending</td>
-        </tr>
-      </tbody>
-    </table>
+<div class="main">
+  <div class="header">
+    <h1>Payment Records</h1>
+    <p>💳 Showing recent transactions</p>
   </div>
 
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Rider</th>
+        <th>Amount</th>
+        <th>Method</th>
+        <th>Date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for payment in payments %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ payment.user.full_name }}</td>
+        <td>₹{{ payment.fare|floatformat:2 }}</td>
+        <td>{{ payment.get_payment_method_display }}</td>
+        <td>{{ payment.created_at|date:"Y-m-d" }}</td>
+        {% if payment.status == "PENDING" %}
+          <td class="pending">Pending</td>
+        {% else %}
+          <td class="paid">Paid</td>
+        {% endif %}
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" style="text-align: center;">No payment records found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

@@ -21,17 +21,20 @@
           </tr>
         </thead>
         <tbody>
+          {% for ride in recent_rides %}
           <tr>
-            <td>1</td>
-            <td>Krishnakumar</td>
-            <td>Kannur</td>
-            <td>Mattanur</td>
-            <td>₹750</td>
-            <td class="status-completed">Completed</td>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ ride.user.full_name }}</td>
+            <td>{{ ride.pickup_location }}</td>
+            <td>{{ ride.drop_location }}</td>
+            <td>₹{{ ride.fare|default_if_none:0|floatformat:2 }}</td>
+            <td class="status-{{ ride.status|lower }}">{{ ride.get_status_display }}</td>
           </tr>
+          {% empty %}
           <tr class="empty-row">
             <td colspan="6">No recent bookings found.</td>
           </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>

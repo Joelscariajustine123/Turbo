@@ -3,7 +3,7 @@
   <div class="main">
     <div class="header">
       <h1>Booking Records</h1>
-      <p>🚕 Current total: 3,560 rides</p>
+      <p>🚕 Current total: {{ ride_count }} rides</p>
     </div>
 
     <table>
@@ -18,30 +18,16 @@
         </tr>
       </thead>
       <tbody>
+        {% for ride in rides %}
         <tr>
-          <td>1</td>
-          <td>Anjali R.</td>
-          <td>Kannur</td>
-          <td>Kozhikode</td>
-          <td>2025-06-29</td>
-          <td class="status-completed">Completed</td>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ ride.user.full_name }}</td>         <td>{{ ride.pickup_location }}</td>      <td>{{ ride.drop_location }}</td>        <td>{{ ride.created_at|date:"Y-m-d" }}</td> <td class="status-{{ ride.status|lower }}">{{ ride.get_status_display }}</td>
         </tr>
+        {% empty %}
         <tr>
-          <td>2</td>
-          <td>Ravi Kumar</td>
-          <td>Mangalore</td>
-          <td>Kasargod</td>
-          <td>2025-06-30</td>
-          <td class="status-pending">Pending</td>
+          <td colspan="6" style="text-align: center;">No ride records found.</td>
         </tr>
-        <tr>
-          <td>3</td>
-          <td>Shweta N.</td>
-          <td>Bangalore</td>
-          <td>Coorg</td>
-          <td>2025-07-01</td>
-          <td class="status-scheduled">Scheduled</td>
-        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>

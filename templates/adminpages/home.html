@@ -1,6 +1,5 @@
 {% extends 'adminpages/base.html' %}
 {% block content %}
-  <!-- Main content -->
   <div class="main">
     <div class="header">
       <h1>Dashboard</h1>
@@ -10,19 +9,19 @@
     <div class="stats">
       <div class="card">
         <h3>Total Riders</h3>
-        <p>1,024 registered users</p>
+        <p>{{ total_riders }} registered users</p>
       </div>
       <div class="card">
         <h3>Total Bookings</h3>
-        <p>3,560 completed rides</p>
+        <p>{{ total_bookings }} completed rides</p>
       </div>
       <div class="card">
         <h3>Pending Requests</h3>
-        <p>8 ride requests pending</p>
+        <p>{{ pending_requests }} ride requests pending</p>
       </div>
       <div class="card">
         <h3>Revenue</h3>
-        <p>₹2,45,000 earned this month</p>
+        <p>₹{{ monthly_revenue|floatformat:2 }} earned this month</p>
       </div>
     </div>
   </div>

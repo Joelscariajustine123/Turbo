@@ -14,34 +14,23 @@
           <th>Completed</th>
           <th>Cancelled</th>
           <th>Total Revenue</th>
-          <th>Average Rating</th>
         </tr>
       </thead>
       <tbody>
+        {% for report in reports %}
         <tr>
-          <td>2025-06-29</td>
-          <td>145</td>
-          <td>139</td>
-          <td>6</td>
-          <td>₹34,200</td>
-          <td>4.8 ⭐</td>
+          <td>{{ report.date|date:"Y-m-d" }}</td>
+          <td>{{ report.total_rides }}</td>
+          <td>{{ report.completed_rides }}</td>
+          <td>{{ report.cancelled_rides }}</td>
+          <td>₹{{ report.total_revenue|default_if_none:0|floatformat:2 }}</td>
+          
         </tr>
+        {% empty %}
         <tr>
-          <td>2025-06-30</td>
-          <td>172</td>
-          <td>165</td>
-          <td>7</td>
-          <td>₹39,500</td>
-          <td>4.7 ⭐</td>
+          <td colspan="6" style="text-align: center;">No ride data available to generate reports.</td>
         </tr>
-        <tr>
-          <td>2025-07-01</td>
-          <td>190</td>
-          <td>183</td>
-          <td>7</td>
-          <td>₹42,300</td>
-          <td>4.9 ⭐</td>
-        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
