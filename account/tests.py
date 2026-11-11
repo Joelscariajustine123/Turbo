@@ -107,3 +107,30 @@ class RoleGuardTests(TestCase):
     def test_anonymous_redirected_to_matching_login(self):
         resp = self.client.get(reverse('riderpages:map_view'))
         self.assertTrue(resp.url.startswith(reverse('account:rider_login') + '?next='))
+
+
+class EnsureAdminCommandTests(TestCase):
+    def run_cmd(self, **env):
+        import os
+        from io import StringIO
+        from unittest import mock
+
+        from django.core.management import call_command
+
+        out = StringIO()
+        with mock.patch.dict(os.environ, env, clear=False):
+            call_command('ensure_admin', stdout=out, stderr=out)
+        return out.getvalue()
+
+    def test_creates_admin_and_ignores_stray_whitespace(self):
+        out = self.run_cmd(TURBO_ADMIN_EMAIL=' Admin@Turbo.com\n', TURBO_ADMIN_PASSWORD='admin@123\n')
+        self.assertIn('created admin admin@turbo.com', out)
+        resp = self.client.post(reverse('account:admin_login'), {'email': 'admin@turbo.com', 'password': 'admin@123'})
+        self.assertRedirects(resp, reverse('adminpages:home'))
+
+    def test_does_nothing_twice_and_reset_changes_password(self):
+        self.run_cmd(TURBO_ADMIN_EMAIL='admin@turbo.com', TURBO_ADMIN_PASSWORD='first-pass-1')
+        self.assertIn('already exists', self.run_cmd(TURBO_ADMIN_EMAIL='admin@turbo.com', TURBO_ADMIN_PASSWORD='other'))
+        self.assertTrue(CustomUser.objects.get().check_password('first-pass-1'))
+        self.run_cmd(TURBO_ADMIN_EMAIL='admin@turbo.com', TURBO_ADMIN_PASSWORD='second-pass-2', TURBO_ADMIN_RESET='true')
+        self.assertTrue(CustomUser.objects.get().check_password('second-pass-2'))
