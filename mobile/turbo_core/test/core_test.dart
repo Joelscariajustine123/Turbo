@@ -55,6 +55,28 @@ void main() {
     test('numbers sent as strings still parse', () => expect(toDouble('12.50'), 12.5));
   });
 
+  group('tracking', () {
+    test('TripTracking parses the live tracking payload', () {
+      final t = TripTracking.fromJson({
+        'ride_id': 16, 'status': 'ACCEPTED', 'stage': 'pickup', 'stage_label': 'Driver assigned · on the way to pickup',
+        'otp_verified': false, 'tracking_active': true, 'near_target': false,
+        'pickup': {'lat': 11.8689, 'lng': 75.3555, 'label': 'Kannur Railway Station'},
+        'drop': {'lat': 11.8852, 'lng': 75.3593, 'label': 'Payyambalam Beach'},
+        'driver_location': {'lat': 11.88, 'lng': 75.366, 'heading': 135, 'is_stale': false, 'age_seconds': 1.2},
+        'route': {'geometry': [[11.88, 75.366], [11.8689, 75.3555]], 'source': 'osrm', 'to': 'pickup'},
+        'trip_route': {'geometry': [[11.8689, 75.3555], [11.8852, 75.3593]], 'distance_km': 2.4},
+        'distance_to_pickup_km': 1.7, 'distance_to_destination_km': 4.1, 'eta_minutes': 4,
+      });
+      expect(t.isTrip, isTrue);
+      expect(t.needsOtp, isTrue);
+      expect(t.driver!.latitude, 11.88);
+      expect(t.route.length, 2);
+      expect(t.target, t.pickup);
+      expect(formatKm(t.distanceToPickupKm), '1.7 km');
+      expect(formatKm(0.25), '250 m');
+    });
+  });
+
   group('formatting', () {
     test('money uses Indian grouping', () {
       expect(money(347.72), '₹347.72');

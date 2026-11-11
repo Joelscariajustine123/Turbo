@@ -7,9 +7,11 @@ from django.db.models import Avg, Q, Sum
 from django.utils import timezone
 
 from account.services import check_email_free, validate_phone
-from riderpages.models import Ride
+from riderpages import otp
+from riderpages.models import CAR_CHOICES, TRIP_STATUSES, Ride
 
-from .models import AvailabilityStatus, DriverProfile, Earning, RideDecline
+from . import tracking
+from .models import AvailabilityStatus, DriverLocation, DriverProfile, Earning, RideDecline
 
 
 def get_driver(user):
@@ -26,24 +28,28 @@ def available_rides(driver):
 
 
 def ongoing_rides(driver):
-    return Ride.objects.select_related('user').filter(driver=driver, status='ACCEPTED')
+    return Ride.objects.select_related('user').filter(driver=driver, status__in=TRIP_STATUSES)
 
 
 def ride_history(driver):
-    return Ride.objects.select_related('user').filter(driver=driver).exclude(status='ACCEPTED')
+    return Ride.objects.select_related('user').filter(driver=driver).exclude(status__in=TRIP_STATUSES)
 
 
 def accept_ride(driver, ride_id):
     if driver.availability_status == AvailabilityStatus.OFFLINE:
         raise ValidationError("You are offline. Set yourself to Available to accept rides.")
-    # Conditional UPDATE so two drivers can't both claim the same ride.
-    claimed = Ride.objects.filter(
-        id=ride_id, status='CONFIRMED', driver__isnull=True
-    ).update(driver=driver, status='ACCEPTED', updated_at=timezone.now())
-    if not claimed:
-        raise ValidationError("This ride is no longer available.")
-    DriverProfile.objects.filter(pk=driver.pk).update(availability_status=AvailabilityStatus.ON_TRIP)
-    return Ride.objects.get(id=ride_id)
+    with transaction.atomic():
+        # Conditional UPDATE so two drivers can't both claim the same ride.
+        now = timezone.now()
+        claimed = Ride.objects.filter(
+            id=ride_id, status='CONFIRMED', driver__isnull=True
+        ).update(driver=driver, status='ACCEPTED', accepted_at=now, updated_at=now)
+        if not claimed:
+            raise ValidationError("This ride is no longer available.")
+        DriverProfile.objects.filter(pk=driver.pk).update(availability_status=AvailabilityStatus.ON_TRIP)
+        ride = Ride.objects.get(id=ride_id)
+        otp.issue(ride)  # the rider can now see their pickup code
+    return ride
 
 
 def decline_ride(driver, ride_id):
@@ -56,21 +62,86 @@ def decline_ride(driver, ride_id):
         pass
 
 
+def _locked_ride(driver, ride_id):
+    """The driver's own ride, row-locked. Other drivers' rides look like they don't exist."""
+    ride = Ride.objects.select_for_update().filter(id=ride_id, driver=driver).first()
+    if ride is None:
+        raise ValidationError("Ride not found.")
+    return ride
+
+
+def mark_arrived(driver, ride_id):
+    """ACCEPTED -> ARRIVED. Issues a fresh OTP so its validity starts now."""
+    with transaction.atomic():
+        ride = _locked_ride(driver, ride_id)
+        if ride.status != 'ACCEPTED':
+            raise ValidationError("You can only mark arrival while on the way to the pickup.")
+        ride.status = 'ARRIVED'
+        ride.arrived_at = timezone.now()
+        ride.save(update_fields=['status', 'arrived_at', 'updated_at'])
+        otp.issue(ride)
+    return ride
+
+
+def verify_pickup_otp(driver, ride_id, code, ip_address=None):
+    """ACCEPTED/ARRIVED -> IN_PROGRESS, only with the rider's valid code."""
+    with transaction.atomic():
+        ride = _locked_ride(driver, ride_id)
+        if ride.otp_verified or ride.status == 'IN_PROGRESS':
+            raise ValidationError("This ride has already started.")
+        if ride.status not in ('ACCEPTED', 'ARRIVED'):
+            raise ValidationError("This ride can't be started.")
+        result = otp.verify(ride, driver, code, ip_address)
+        if result.ok:
+            now = timezone.now()
+            ride.status = 'IN_PROGRESS'
+            ride.otp_verified = True
+            ride.started_at = now
+            ride.arrived_at = ride.arrived_at or now
+            ride.save(update_fields=['status', 'otp_verified', 'started_at', 'arrived_at', 'updated_at'])
+    # Raise outside the transaction so the failed-attempt counter is kept.
+    if not result.ok:
+        err = ValidationError(result.message, code=result.reason)
+        err.attempts_left = result.attempts_left
+        raise err
+    return ride
+
+
 def complete_ride(driver, ride_id):
+    """IN_PROGRESS -> COMPLETED. Records the earning and stops location sharing."""
     with transaction.atomic():
         ride = Ride.objects.select_for_update().filter(id=ride_id, driver=driver).first()
-        if ride is None or ride.status != 'ACCEPTED':
-            raise ValidationError("This ride cannot be marked as complete.")
+        if ride is None or ride.status != 'IN_PROGRESS':
+            raise ValidationError("A ride can only be completed after the passenger's OTP is verified.")
         ride.status = 'COMPLETED'
-        ride.save(update_fields=['status', 'updated_at'])
+        ride.completed_at = timezone.now()
+        ride.save(update_fields=['status', 'completed_at', 'updated_at'])
         Earning.objects.get_or_create(
             ride=ride,
             defaults={'driver': driver, 'amount': ride.fare or 0, 'date': timezone.localdate()},
         )
-        if not Ride.objects.filter(driver=driver, status='ACCEPTED').exists():
+        DriverLocation.objects.filter(driver=driver, ride=ride).update(ride=None)
+        if not Ride.objects.filter(driver=driver, status__in=TRIP_STATUSES).exists():
             DriverProfile.objects.filter(pk=driver.pk, availability_status=AvailabilityStatus.ON_TRIP) \
                 .update(availability_status=AvailabilityStatus.AVAILABLE)
     return ride
+
+
+# Allowed driver-initiated status changes. IN_PROGRESS is only reachable by OTP.
+STATUS_ACTIONS = {
+    'ARRIVED': mark_arrived,
+    'COMPLETED': complete_ride,
+}
+
+
+def change_ride_status(driver, ride_id, status):
+    status = (status or '').upper()
+    if status == 'IN_PROGRESS':
+        raise ValidationError("A ride starts only after the passenger's OTP is verified.")
+    action = STATUS_ACTIONS.get(status)
+    if action is None:
+        raise ValidationError("Unsupported status change.")
+    return action(driver, ride_id)
 
 
 def earnings_summary(driver, days=30):
@@ -117,6 +188,13 @@ def update_profile(driver, data, photo=None):
             errors.extend(exc.messages)
     if 'availability_status' in clean and clean['availability_status'] not in AvailabilityStatus.values:
         errors.append("Invalid availability status.")
+    if clean.get('availability_status') == AvailabilityStatus.OFFLINE and \
+            Ride.objects.filter(driver=driver, status__in=TRIP_STATUSES).exists():
+        errors.append("Finish your current ride before going offline — the rider is tracking you.")
+    if clean.get('vehicle_type') and clean['vehicle_type'] not in dict(CAR_CHOICES):
+        errors.append("Invalid vehicle type.")
+    if 'vehicle_number' in clean:
+        clean['vehicle_number'] = clean['vehicle_number'].upper()
     if errors:
         raise ValidationError(errors)
 
@@ -126,9 +204,11 @@ def update_profile(driver, data, photo=None):
     if user_fields:
         user.save(update_fields=user_fields)
 
-    for f in ('license_number', 'vehicle_info', 'availability_status'):
+    for f in ('license_number', 'vehicle_info', 'vehicle_number', 'vehicle_type', 'availability_status'):
         if f in clean:
             setattr(driver, f, clean[f])
+    if clean.get('availability_status') == AvailabilityStatus.OFFLINE:
+        tracking.stop_sharing(driver)
     if photo:
         driver.profile_photo = photo
     driver.save()

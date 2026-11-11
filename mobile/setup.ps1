@@ -100,12 +100,17 @@ Patch-Ios 'turbo_rider' @{
 }
 
 Create-App 'turbo_driver'
-Patch-Android 'turbo_driver' @('INTERNET', 'CAMERA')
+# Live tracking: location + a foreground service so GPS keeps working with the screen locked.
+Patch-Android 'turbo_driver' @('INTERNET', 'CAMERA', 'ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION',
+    'FOREGROUND_SERVICE', 'FOREGROUND_SERVICE_LOCATION', 'WAKE_LOCK', 'POST_NOTIFICATIONS')
 Patch-Ios 'turbo_driver' @{
-    'NSCameraUsageDescription'       = '<string>Take a profile photo for riders to recognise you.</string>'
-    'NSPhotoLibraryUsageDescription' = '<string>Choose a profile photo for riders to recognise you.</string>'
-    'LSApplicationQueriesSchemes'    = '<array><string>tel</string></array>'
-    'NSAppTransportSecurity'         = '<dict><key>NSAllowsArbitraryLoads</key><true/></dict>'
+    'NSCameraUsageDescription'                    = '<string>Take a profile photo for riders to recognise you.</string>'
+    'NSPhotoLibraryUsageDescription'              = '<string>Choose a profile photo for riders to recognise you.</string>'
+    'NSLocationWhenInUseUsageDescription'         = '<string>Turbo shares your location with the rider of a ride you accepted.</string>'
+    'NSLocationAlwaysAndWhenInUseUsageDescription' = '<string>Turbo keeps sharing your location with your rider while the screen is locked during a ride.</string>'
+    'UIBackgroundModes'                           = '<array><string>location</string></array>'
+    'LSApplicationQueriesSchemes'                 = '<array><string>tel</string><string>https</string></array>'
+    'NSAppTransportSecurity'                      = '<dict><key>NSAllowsArbitraryLoads</key><true/></dict>'
 }
 
 Create-App 'turbo_admin'

@@ -199,7 +199,8 @@ LOGGING = {
 # ---------------------------------------------------------------------------
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # React + mobile apps
+        'rest_framework.authentication.SessionAuthentication',        # Django website pages (CSRF-protected)
     ],
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
     'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer']
@@ -208,7 +209,12 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'EXCEPTION_HANDLER': 'api.exceptions.exception_handler',
-    'DEFAULT_THROTTLE_RATES': {'auth': '20/min'},
+    'DEFAULT_THROTTLE_RATES': {
+        'auth': '20/min',
+        'location': '45/min',    # drivers send a GPS fix every 3 s (20/min)
+        'tracking': '90/min',    # riders poll every 3 s, allow a couple of tabs
+        'otp': '15/min',
+    },
     'COERCE_DECIMAL_TO_STRING': False,  # send prices as JSON numbers
 }
 
@@ -233,6 +239,16 @@ ROUTING_TIMEOUT = 5
 
 # UPI ID shown to riders for payment
 UPI_ID = os.environ.get('TURBO_UPI_ID', 'joeljustine@ybl')
+
+# ---------------------------------------------------------------------------
+# Live tracking + pickup OTP
+# ---------------------------------------------------------------------------
+# Google Maps for the live maps. Leave empty to use OpenStreetMap (no key needed).
+GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
+GOOGLE_MAPS_MAP_ID = os.environ.get('GOOGLE_MAPS_MAP_ID', 'DEMO_MAP_ID')  # needed for Advanced Markers
+TURBO_OTP_TTL_MINUTES = int(os.environ.get('TURBO_OTP_TTL_MINUTES', 10))
+TURBO_OTP_LOCK_MINUTES = int(os.environ.get('TURBO_OTP_LOCK_MINUTES', 10))
+TURBO_TRACK_RETENTION_DAYS = int(os.environ.get('TURBO_TRACK_RETENTION_DAYS', 30))  # breadcrumb history
 
 # Tests never call the external routing server.
 if 'test' in sys.argv:

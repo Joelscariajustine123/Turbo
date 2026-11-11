@@ -2,9 +2,11 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from account.decorators import role_required
+from turbo.maps import map_settings
 
 from . import services
 from .models import BASE_FARE, RATE_PER_KM, Ride
@@ -100,9 +102,9 @@ def booking_confirmation(request, ride_id):
             messages.success(
                 request,
                 f"Your ride has been confirmed! Payment method: {ride.get_payment_method_display()}. "
-                "A driver will be assigned shortly.",
+                "We're finding you a driver — you can follow them live here.",
             )
-            return redirect('riderpages:my_rides')
+            return redirect('riderpages:track_ride', ride_id=ride.id)
 
     return render(request, 'riderpages/booking_confirmation.html', {'ride': ride, 'upi_id': settings.UPI_ID})
 
@@ -124,3 +126,20 @@ def cancel_ride(request, ride_id):
     else:
         messages.info(request, "Your ride has been cancelled.")
     return redirect('riderpages:my_rides')
+
+
+@rider_required
+def track_ride(request, ride_id):
+    """Live tracking page for the rider's own ride (map, driver, OTP)."""
+    from api.tracking_views import rider_tracking_data  # local import: api depends on this app
+
+    ride = get_object_or_404(Ride.objects.select_related('driver__user'), id=ride_id, user=request.user)
+    return render(request, 'riderpages/track.html', {
+        'ride': ride,
+        'trk_config': {
+            'ride_id': ride.id,
+            'login_url': reverse('account:rider_login'),
+            'maps': map_settings(),
+            'initial': rider_tracking_data(request, ride),
+        },
+    })

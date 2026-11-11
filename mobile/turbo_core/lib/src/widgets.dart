@@ -60,6 +60,7 @@ const statusColors = {
   'PENDING': Color(0xFF52525B),
   'CONFIRMED': Color(0xFF0E7490),
   'ACCEPTED': Color(0xFF1D4ED8),
+  'ARRIVED': Color(0xFF7C3AED),
   'IN_PROGRESS': Color(0xFF1D4ED8),
   'COMPLETED': Color(0xFF15803D),
   'CANCELLED': Color(0xFFB91C1C),

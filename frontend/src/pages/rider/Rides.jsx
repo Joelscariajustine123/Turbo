@@ -4,8 +4,10 @@ import { Link, useParams } from 'react-router-dom';
 import { api, qs } from '../../api/client';
 import { upiLink } from '../../api/geo';
 import { Alert, Empty, Loading, Pager, StatusBadge, money, useAction, useApi, when } from '../../components/ui';
+import { LiveMap, OtpCard, TripMetrics } from '../../components/Tracking';
 
-const ACTIVE = ['PENDING', 'CONFIRMED', 'ACCEPTED', 'IN_PROGRESS'];
+const ACTIVE = ['PENDING', 'CONFIRMED', 'ACCEPTED', 'ARRIVED', 'IN_PROGRESS'];
+const TRIP = ['ACCEPTED', 'ARRIVED', 'IN_PROGRESS'];
 
 export function RideList() {
   const [state, setState] = useState('');
@@ -70,6 +72,9 @@ function Stars({ onRate, busy }) {
 export function RideDetail() {
   const { id } = useParams();
   const { data: ride, error, loading, setData, reload } = useApi(`/rider/rides/${id}/`, { pollMs: 10000 });
+  const onTrip = ride && TRIP.includes(ride.status);
+  // Live driver position + route, every 3 s during the trip.
+  const live = useApi(onTrip ? `/rider/ride/tracking/?ride_id=${id}` : null, { pollMs: 3000 });
   const { data: meta } = useApi('/meta/');
   const [showUpi, setShowUpi] = useState(false);
   const [txn, setTxn] = useState('');
@@ -102,13 +107,24 @@ export function RideDetail() {
         <p className="fare">{money(ride.fare)}</p>
         <Alert>{act.error}</Alert>
 
+        {onTrip && !ride.otp_verified && (ride.status === 'ACCEPTED' || ride.status === 'ARRIVED') && (
+          <OtpCard rideId={ride.id} status={ride.status} />
+        )}
+        {onTrip && live.data && (
+          <>
+            <p><strong>{live.data.stage_label}</strong>{live.data.driver_location?.is_stale && <span className="muted"> · driver GPS signal lost</span>}</p>
+            <TripMetrics t={live.data} />
+            <LiveMap tracking={live.data} height={340} />
+          </>
+        )}
         {ride.driver && (
           <div className="driver-box">
             {ride.driver.profile_photo && <img src={ride.driver.profile_photo} alt="" />}
             <div>
               <strong>{ride.driver.full_name}</strong>
-              <span className="muted">{ride.driver.vehicle_info || 'Vehicle details not added'}</span>
-              {ride.driver.phone && ride.status === 'ACCEPTED' && <a href={`tel:${ride.driver.phone}`}>Call {ride.driver.phone}</a>}
+              <span className="muted">{[ride.driver.vehicle_info, ride.driver.vehicle_type].filter(Boolean).join(' · ') || 'Vehicle details not added'}</span>
+              {ride.driver.vehicle_number && <span className="plate">{ride.driver.vehicle_number}</span>}
+              {ride.driver.phone && onTrip && <a href={`tel:${ride.driver.phone}`}>Call {ride.driver.phone}</a>}
             </div>
           </div>
         )}

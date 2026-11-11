@@ -67,8 +67,8 @@ class DriverProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = DriverProfile
         fields = ['id', 'profile_id', 'username', 'full_name', 'email', 'phone', 'is_active', 'date_joined',
-                  'license_number', 'vehicle_info', 'availability_status', 'availability_display',
-                  'profile_photo']
+                  'license_number', 'vehicle_info', 'vehicle_number', 'vehicle_type', 'availability_status',
+                  'availability_display', 'profile_photo']
         read_only_fields = fields
 
 
@@ -91,7 +91,8 @@ class RideSerializer(serializers.ModelSerializer):
         model = Ride
         fields = ['id', 'pickup_location', 'drop_location', 'pickup_lat', 'pickup_lng', 'drop_lat', 'drop_lng',
                   'car_type', 'car_type_display', 'distance', 'fare', 'status', 'status_display',
-                  'payment_method', 'payment_method_display', 'transaction_id',
+                  'payment_method', 'payment_method_display', 'transaction_id', 'otp_verified',
+                  'accepted_at', 'arrived_at', 'started_at', 'completed_at',
                   'created_at', 'updated_at', 'rider', 'driver', 'rating', 'can_cancel']
         read_only_fields = fields
 
@@ -114,7 +115,9 @@ class RideSerializer(serializers.ModelSerializer):
         if photo and request is not None:
             photo = request.build_absolute_uri(photo)
         return {'id': d.user_id, 'full_name': d.user.full_name, 'phone': d.user.phone,
-                'vehicle_info': d.vehicle_info, 'profile_photo': photo}
+                'vehicle_info': d.vehicle_info, 'vehicle_number': d.vehicle_number,
+                'vehicle_type': d.get_vehicle_type_display() if d.vehicle_type else '',
+                'profile_photo': photo}
 
     def get_rating(self, ride):
         ratings = list(ride.rating_set.all())  # uses prefetch_related('rating_set')
@@ -166,3 +169,21 @@ class ContactMessageSerializer(serializers.ModelSerializer):
         model = ContactMessage
         fields = ['id', 'name', 'email', 'message', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class LocationUpdateSerializer(serializers.Serializer):
+    latitude = serializers.FloatField(min_value=-90, max_value=90)
+    longitude = serializers.FloatField(min_value=-180, max_value=180)
+    accuracy = serializers.FloatField(min_value=0, max_value=100000, required=False, allow_null=True)
+    speed = serializers.FloatField(min_value=0, max_value=400, required=False, allow_null=True)   # km/h
+    heading = serializers.FloatField(min_value=0, max_value=360, required=False, allow_null=True)
+
+
+class RideStatusSerializer(serializers.Serializer):
+    ride_id = serializers.IntegerField()
+    status = serializers.ChoiceField(choices=['ARRIVED', 'IN_PROGRESS', 'COMPLETED'])
+
+
+class VerifyOTPSerializer(serializers.Serializer):
+    ride_id = serializers.IntegerField()
+    otp = serializers.RegexField(r'^\s*\d{6}\s*$', error_messages={'invalid': 'Enter the 6-digit code.'})

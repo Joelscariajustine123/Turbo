@@ -56,10 +56,15 @@
                     <p><strong>Fare:</strong> ₹{{ ride.fare|floatformat:2 }}{% if ride.payment_method %} · {{ ride.get_payment_method_display }}{% endif %}</p>
                 </div>
                 <div class="ride-actions">
+                    <span class="btn" style="background:#374151;cursor:default;">{{ ride.get_status_display }}</span>
+                    {% if ride.status == 'IN_PROGRESS' %}
                     <form method="post" action="{% url 'driverpages:complete_ride' ride.id %}">
                         {% csrf_token %}
                         <button type="submit" class="btn complete">Mark as Complete</button>
                     </form>
+                    {% else %}
+                    <a href="{% url 'driverpages:live' %}" class="btn complete" style="text-decoration:none;">Open live map &amp; verify OTP</a>
+                    {% endif %}
                 </div>
             </div>
         {% empty %}

@@ -1,6 +1,8 @@
 # driverpages/models.py
-from django.db import models
 from django.conf import settings
+from django.db import models
+
+from riderpages.models import CAR_CHOICES
 
 class AvailabilityStatus(models.TextChoices):
     AVAILABLE = 'available', 'Available'
@@ -10,7 +12,9 @@ class AvailabilityStatus(models.TextChoices):
 class DriverProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     license_number = models.CharField(max_length=20)
-    vehicle_info = models.CharField(max_length=100)
+    vehicle_info = models.CharField(max_length=100)  # shown as "vehicle model"
+    vehicle_number = models.CharField(max_length=20, blank=True)  # registration plate
+    vehicle_type = models.CharField(max_length=10, choices=CAR_CHOICES, blank=True)
     availability_status = models.CharField(max_length=10, choices=AvailabilityStatus.choices, default=AvailabilityStatus.AVAILABLE)
     profile_photo = models.ImageField(upload_to='driver_photos/', blank=True, null=True)
 
@@ -50,3 +54,34 @@ class Rating(models.Model):
 
     def __str__(self):
         return f"{self.driver.user.full_name} - {self.rating}"
+
+
+class DriverLocation(models.Model):
+    """The driver's latest GPS fix (one row per driver, overwritten every few seconds)."""
+    driver = models.OneToOneField(DriverProfile, on_delete=models.CASCADE, related_name='location')
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    accuracy = models.FloatField(null=True, blank=True)   # metres
+    speed = models.FloatField(null=True, blank=True)      # km/h
+    heading = models.FloatField(null=True, blank=True)    # degrees from north
+    is_online = models.BooleanField(default=True)
+    ride = models.ForeignKey('riderpages.Ride', on_delete=models.SET_NULL, null=True, blank=True,
+                             related_name='driver_locations')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
+
+    def __str__(self):
+        return f"{self.driver} @ {self.latitude},{self.longitude}"
+
+
+class TripLocationPoint(models.Model):
+    """Sparse breadcrumb trail of an active ride (kept for TURBO_TRACK_RETENTION_DAYS)."""
+    ride = models.ForeignKey('riderpages.Ride', on_delete=models.CASCADE, related_name='track_points')
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    speed = models.FloatField(null=True, blank=True)
+    heading = models.FloatField(null=True, blank=True)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['ride', 'recorded_at']), models.Index(fields=['recorded_at'])]

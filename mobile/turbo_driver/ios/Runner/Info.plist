@@ -74,5 +74,11 @@
 	<string>Choose a profile photo for riders to recognise you.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array><string>tel</string></array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Turbo shares your location with the rider of a ride you accepted.</string>
+	<key>UIBackgroundModes</key>
+	<array><string>location</string></array>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Turbo keeps sharing your location with your rider while the screen is locked during a ride.</string>
 </dict>
 </plist>

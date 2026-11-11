@@ -12,9 +12,11 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _form = GlobalKey<FormState>();
   final _c = {
-    for (final k in ['full_name', 'phone', 'email', 'license_number', 'vehicle_info']) k: TextEditingController(),
+    for (final k in ['full_name', 'phone', 'email', 'license_number', 'vehicle_info', 'vehicle_number']) k: TextEditingController(),
   };
   DriverProfile? _profile;
+  String _vehicleType = '';
+  List<Choice> _vehicleTypes = const [];
   String? _photoPath;
   String? _error;
   bool _busy = false;
@@ -40,12 +42,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _c['email']!.text = p.email;
     _c['license_number']!.text = p.licenseNumber;
     _c['vehicle_info']!.text = p.vehicleInfo;
+    _c['vehicle_number']!.text = p.vehicleNumber;
+    _vehicleType = p.vehicleType;
   }
 
   Future<void> _load() async {
     try {
-      final json = await AuthScope.read(context).api.get('/driver/profile/');
-      if (mounted) setState(() => _fill(DriverProfile.fromJson(json as Map<String, dynamic>)));
+      final auth = AuthScope.read(context);
+      final json = await auth.api.get('/driver/profile/');
+      final meta = await auth.meta();
+      if (mounted) {
+        setState(() {
+          _vehicleTypes = meta.carTypes;
+          _fill(DriverProfile.fromJson(json as Map<String, dynamic>));
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _error = errorText(e));
     }
@@ -74,7 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _error = null;
     });
     try {
-      final fields = {for (final e in _c.entries) e.key: e.value.text.trim()};
+      final fields = {for (final e in _c.entries) e.key: e.value.text.trim(), 'vehicle_type': _vehicleType};
       final json = await auth.api.multipart('PATCH', '/driver/profile/', fields,
           fileField: _photoPath != null ? 'profile_photo' : null, filePath: _photoPath);
       await auth.reloadUser();
@@ -146,7 +157,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           validator: (v) => RegExp(r'^\d{10}$').hasMatch(v ?? '') ? null : 'Enter a 10-digit number'),
                       _field('email', 'Email', type: TextInputType.emailAddress),
                       _field('license_number', 'Licence number'),
-                      _field('vehicle_info', 'Vehicle (model + number plate)'),
+                      _field('vehicle_info', 'Vehicle model'),
+                      _field('vehicle_number', 'Registration number', validator: (_) => null),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: DropdownButtonFormField<String>(
+                          // `value` keeps Flutter 3.22–3.32 support (`initialValue` only exists from 3.33).
+                          // ignore: deprecated_member_use
+                          value: _vehicleType,
+                          decoration: const InputDecoration(labelText: 'Vehicle type'),
+                          items: [
+                            const DropdownMenuItem(value: '', child: Text('— Select —')),
+                            for (final c in _vehicleTypes) DropdownMenuItem(value: c.value, child: Text(c.label)),
+                          ],
+                          onChanged: (v) => setState(() => _vehicleType = v ?? ''),
+                        ),
+                      ),
                       FilledButton(onPressed: _busy ? null : _save, child: Text(_busy ? 'Saving…' : 'Save profile')),
                     ]),
                   ),

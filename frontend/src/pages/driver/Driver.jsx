@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, qs } from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 import { ChangePassword } from '../Account';
+import { GpsChip, LiveMap, OtpDialog, TripMetrics, useDriverLocation } from '../../components/Tracking';
 import {
   Alert, BarChart, Empty, Field, Loading, Pager, Stat, StatusBadge, day, money, useAction, useApi, when,
 } from '../../components/ui';
@@ -35,8 +36,23 @@ export function Dashboard() {
   const { data: meta } = useApi('/meta/');
   const act = useAction();
   const [notice, setNotice] = useState('');
+  const [otpFor, setOtpFor] = useState(null);
+  const [tracking, setTracking] = useState(null);
 
   const refresh = () => Promise.all([available.reload(true), ongoing.reload(true), profile.reload(true)]);
+  const status = profile.data?.availability_status;
+  // Share GPS every 3 s whenever the driver is online (the rider sees it during a trip).
+  const location = useDriverLocation(!!status && status !== 'offline', (data) => {
+    setTracking(data.tracking);
+    if ((data.tracking?.status || null) !== (ongoing.data?.results[0]?.status || null)) ongoing.reload(true);
+  });
+
+  const statusAction = (id, value, message) =>
+    act.run(async () => {
+      await api('/driver/ride/status/', { method: 'POST', body: { ride_id: id, status: value } });
+      setNotice(message);
+      await refresh();
+    });
 
   const rideAction = (id, action, message) =>
     act.run(async () => {
@@ -50,12 +66,11 @@ export function Dashboard() {
       profile.setData(await api('/driver/profile/', { method: 'PATCH', body: { availability_status: value } }));
     });
 
-  const status = profile.data?.availability_status;
-
   return (
     <div className="stack">
       <div className="page-head">
         <h1>Dashboard</h1>
+        <GpsChip {...location} />
         {profile.data && (
           <label className={`availability av-${status}`}>
             Status
@@ -77,12 +92,32 @@ export function Dashboard() {
         <h2>Ongoing rides</h2>
         {ongoing.loading && !ongoing.data ? <Loading /> : ongoing.data?.results.length ? (
           ongoing.data.results.map((r) => (
-            <RideCard key={r.id} ride={r}>
-              <button className="btn primary" disabled={act.busy}
-                onClick={() => rideAction(r.id, 'complete', 'Ride completed. Earnings updated.')}>
-                Mark complete
-              </button>
-            </RideCard>
+            <div key={r.id} className="stack">
+              <RideCard ride={r}>
+                <StatusBadge status={r.status} label={r.status_display} />
+                {r.status === 'ACCEPTED' && (
+                  <button className="btn ghost" disabled={act.busy}
+                    onClick={() => statusAction(r.id, 'ARRIVED', "Marked as arrived. Ask the rider for their OTP.")}>
+                    I've arrived
+                  </button>
+                )}
+                {(r.status === 'ACCEPTED' || r.status === 'ARRIVED') && (
+                  <button className="btn primary" disabled={act.busy} onClick={() => setOtpFor(r.id)}>Verify OTP</button>
+                )}
+                {r.status === 'IN_PROGRESS' && (
+                  <button className="btn success" disabled={act.busy}
+                    onClick={() => rideAction(r.id, 'complete', 'Ride completed. Earnings updated.')}>
+                    Complete ride
+                  </button>
+                )}
+              </RideCard>
+              {tracking && tracking.ride_id === r.id && (
+                <>
+                  <TripMetrics t={tracking} />
+                  <LiveMap tracking={tracking} me={location.fix} />
+                </>
+              )}
+            </div>
           ))
         ) : <Empty>No ongoing rides.</Empty>}
       </section>
@@ -108,6 +143,10 @@ export function Dashboard() {
           ))
         ) : <Empty>No new ride requests right now. This list refreshes automatically.</Empty>}
       </section>
+      {otpFor && (
+        <OtpDialog rideId={otpFor} onClose={() => setOtpFor(null)}
+          onVerified={() => { setOtpFor(null); setNotice('Passenger verified. Ride started — head to the destination.'); refresh(); }} />
+      )}
     </div>
   );
 }
@@ -203,6 +242,7 @@ export function Profile() {
       setForm({
         full_name: data.full_name, phone: data.phone || '', email: data.email,
         license_number: data.license_number, vehicle_info: data.vehicle_info,
+        vehicle_number: data.vehicle_number || '', vehicle_type: data.vehicle_type || '',
         availability_status: data.availability_status,
       });
     }
@@ -245,7 +285,18 @@ export function Profile() {
         </div>
         <div className="row-2">
           <Field label="Licence number"><input required value={form.license_number} onChange={set('license_number')} /></Field>
-          <Field label="Vehicle (model + number)"><input required value={form.vehicle_info} onChange={set('vehicle_info')} /></Field>
+          <Field label="Vehicle model"><input required value={form.vehicle_info} onChange={set('vehicle_info')} /></Field>
+        </div>
+        <div className="row-2">
+          <Field label="Registration number">
+            <input value={form.vehicle_number} maxLength={20} style={{ textTransform: 'uppercase' }} onChange={set('vehicle_number')} />
+          </Field>
+          <Field label="Vehicle type">
+            <select value={form.vehicle_type} onChange={set('vehicle_type')}>
+              <option value="">— Select —</option>
+              {(meta?.car_types || []).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </Field>
         </div>
         <Field label="Availability">
           <select value={form.availability_status} onChange={set('availability_status')}>

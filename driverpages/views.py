@@ -1,11 +1,15 @@
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from account.decorators import role_required
+from turbo.maps import map_settings
 
 from . import services
+from riderpages.models import CAR_CHOICES
+
 from .models import AvailabilityStatus
 
 driver_required = role_required('driver')
@@ -35,8 +39,11 @@ def _ride_action(request, ride_id, action, success_message, level=messages.SUCCE
 @driver_required
 @require_POST
 def accept_ride(request, ride_id):
-    return _ride_action(request, ride_id, services.accept_ride,
-                        "Ride accepted! It is now listed under 'Ongoing Rides'.")
+    response = _ride_action(request, ride_id, services.accept_ride,
+                            "Ride accepted! Head to the pickup — ask the rider for their OTP when they get in.")
+    if services.ongoing_rides(services.get_driver(request.user)).filter(pk=ride_id).exists():
+        return redirect('driverpages:live')
+    return response
 
 
 @driver_required
@@ -76,7 +83,8 @@ def edit_profile(request):
     driver = services.get_driver(request.user)
 
     if request.method == 'POST':
-        fields = ('full_name', 'phone', 'email', 'license_number', 'vehicle_info', 'availability_status')
+        fields = ('full_name', 'phone', 'email', 'license_number', 'vehicle_info', 'vehicle_number', 'vehicle_type',
+                  'availability_status')
         try:
             services.update_profile(
                 driver,
@@ -93,4 +101,23 @@ def edit_profile(request):
     return render(request, 'driverpages/settings.html', {
         'driver': driver,
         'availability_choices': AvailabilityStatus.choices,
+        'vehicle_types': CAR_CHOICES,
+    })
+
+
+@driver_required
+def live(request):
+    """Live location page: GPS sharing, active trip map, OTP verification, status controls."""
+    from api.tracking_views import driver_active_ride_data  # local import: api depends on this app
+
+    driver = services.get_driver(request.user)
+    return render(request, 'driverpages/live.html', {
+        'driver': driver,
+        'trk_config': {
+            'availability': driver.availability_status,
+            'login_url': reverse('account:driver_login'),
+            'dashboard_url': reverse('driverpages:homepage'),
+            'maps': map_settings(),
+            'initial': driver_active_ride_data(request, driver),
+        },
     })

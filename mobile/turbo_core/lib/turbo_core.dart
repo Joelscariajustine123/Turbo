@@ -5,4 +5,5 @@ export 'src/api_client.dart';
 export 'src/auth.dart';
 export 'src/models.dart';
 export 'src/screens.dart';
+export 'src/tracking.dart';
 export 'src/widgets.dart';

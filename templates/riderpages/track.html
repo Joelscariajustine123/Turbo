@@ -1,0 +1,76 @@
+{% extends 'riderpages/base.html' %}
+{% load static %}
+{% block title %}Track your ride{% endblock %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'tracking/tracking.css' %}" />
+{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="trk" style="--trk-top: var(--nav-h);">
+  <aside class="trk-panel" aria-live="polite">
+    <div class="trk-head">
+      <h1>Your ride</h1>
+      <a href="{% url 'riderpages:my_rides' %}" class="trk-small"><i class="bx bx-left-arrow-alt"></i> My rides</a>
+    </div>
+
+    <div id="trk-stage" class="trk-stage"><strong>{{ ride.get_status_display }}</strong><span class="trk-small">Ride #{{ ride.id }}</span></div>
+    <div id="trk-steps" class="trk-steps trk-hidden"></div>
+
+    <div id="trk-searching" class="trk-card trk-searching trk-hidden">
+      <div class="trk-radar"></div>
+      <h2>Finding you a driver</h2>
+      <p class="trk-muted">Hang tight — this page updates automatically as soon as a driver accepts.</p>
+    </div>
+
+    <div id="trk-pay" class="trk-card trk-hidden">
+      <h2>Payment pending</h2>
+      <p class="trk-muted">Choose a payment method to send your ride to nearby drivers.</p>
+      <a class="trk-btn primary block" href="{% url 'riderpages:booking_confirmation' ride.id %}"><i class="bx bx-wallet"></i>Pay now</a>
+    </div>
+
+    <!-- Pickup OTP: only for this rider, only before the ride starts -->
+    <section id="trk-otp" class="trk-card trk-otp trk-hidden" aria-labelledby="otp-title">
+      <h2 id="otp-title">Your ride verification OTP</h2>
+      <div id="trk-otp-code" class="trk-otp-code" aria-live="polite">••••••</div>
+      <p id="trk-otp-note" class="trk-small"></p>
+      <button type="button" id="trk-otp-regen" class="trk-btn ghost"><i class="bx bx-refresh"></i>Get a new code</button>
+    </section>
+
+    <div id="trk-metrics" class="trk-metrics trk-hidden">
+      <div class="trk-metric"><span>To pickup</span><strong id="m-pickup">—</strong></div>
+      <div class="trk-metric"><span>To drop</span><strong id="m-drop">—</strong></div>
+      <div class="trk-metric"><span>ETA</span><strong id="m-eta">—</strong></div>
+    </div>
+
+    <div id="trk-driver" class="trk-card trk-hidden"></div>
+
+    <div class="trk-card">
+      <div id="trk-points" class="trk-points"></div>
+      <p class="trk-small">{{ ride.get_car_type_display }} · ₹{{ ride.fare|floatformat:2 }}{% if ride.payment_method %} · {{ ride.get_payment_method_display }}{% endif %}</p>
+    </div>
+
+    <div id="trk-done" class="trk-card trk-hidden" style="text-align:center;">
+      <h2>You've arrived 🎉</h2>
+      <p class="trk-muted"><strong id="trk-done-fare" style="color:#fff;font-size:1.4rem"></strong><br><span id="trk-done-pay"></span></p>
+      <p class="trk-small">How was your driver?</p>
+      <div id="trk-stars" class="trk-stars"></div>
+      <a class="trk-btn primary block" href="{% url 'riderpages:map_view' %}"><i class="bx bxs-taxi"></i>Book another ride</a>
+    </div>
+
+    <p class="trk-small"><i class="bx bx-lock-alt"></i> Only you can see your driver's live location for this ride. Sharing stops when the ride ends.</p>
+  </aside>
+
+  <div class="trk-mapwrap">
+    <div id="trk-map" class="trk-map" role="region" aria-label="Live map"></div>
+    <div class="trk-map-overlay"><span id="trk-conn" class="trk-chip trk-hidden"></span></div>
+    <div class="trk-fab"><button type="button" id="trk-recenter" class="trk-btn round" aria-label="Re-centre map"><i class="bx bx-target-lock"></i></button></div>
+  </div>
+</div>
+<div id="trk-toasts" aria-live="polite"></div>
+
+{{ trk_config|json_script:"trk-config" }}
+<script src="{% static 'tracking/map.js' %}"></script>
+<script src="{% static 'tracking/common.js' %}"></script>
+<script src="{% static 'tracking/rider.js' %}"></script>
+{% endblock %}

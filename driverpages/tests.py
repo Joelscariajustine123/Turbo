@@ -28,6 +28,14 @@ class DriverFlowTests(TestCase):
         self.assertEqual((self.ride.status, self.ride.driver), ('ACCEPTED', self.driver))
         self.assertFalse(Earning.objects.exists())
 
+        # Completing before the passenger's OTP is verified is refused.
+        self.client.post(reverse('driverpages:complete_ride', args=[self.ride.id]))
+        self.ride.refresh_from_db()
+        self.assertEqual(self.ride.status, 'ACCEPTED')
+
+        from driverpages import services
+        from riderpages import otp
+        services.verify_pickup_otp(self.driver, self.ride.id, otp.for_rider(self.ride).code)
         self.client.post(reverse('driverpages:complete_ride', args=[self.ride.id]))
         self.ride.refresh_from_db()
         self.assertEqual(self.ride.status, 'COMPLETED')

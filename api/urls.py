@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from . import tracking_views as tv
 from . import views
 
 router = DefaultRouter(trailing_slash=True)
@@ -25,6 +26,18 @@ urlpatterns = [
     path('auth/change-password/', views.ChangePasswordView.as_view(), name='change-password'),
 
     path('rider/quote/', views.QuoteView.as_view(), name='quote'),
+
+    # Live tracking + pickup OTP
+    path('driver/location/update/', tv.DriverLocationUpdateView.as_view(), name='driver-location-update'),
+    path('driver/location/current/', tv.DriverCurrentLocationView.as_view(), name='driver-location-current'),
+    path('driver/active-ride/', tv.DriverActiveRideView.as_view(), name='driver-active-ride'),
+    path('driver/ride/status/', tv.DriverRideStatusView.as_view(), name='driver-ride-status'),
+    path('driver/ride/verify-otp/', tv.DriverVerifyOTPView.as_view(), name='driver-verify-otp'),
+    path('rider/ride/active/', tv.RiderActiveRideView.as_view(), name='rider-active-ride'),
+    path('rider/ride/driver-location/', tv.RiderDriverLocationView.as_view(), name='rider-driver-location'),
+    path('rider/ride/tracking/', tv.RiderTrackingView.as_view(), name='rider-tracking'),
+    path('rider/ride/otp/', tv.RiderOTPView.as_view(), name='rider-otp'),
+    path('rider/ride/otp/regenerate/', tv.RiderOTPRegenerateView.as_view(), name='rider-otp-regenerate'),
 
     path('driver/profile/', views.DriverProfileView.as_view(), name='driver-profile'),
     path('driver/earnings/', views.DriverEarningsView.as_view(), name='driver-earnings'),

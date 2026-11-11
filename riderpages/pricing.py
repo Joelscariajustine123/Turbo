@@ -25,11 +25,15 @@ OSRM_DOWN_KEY = 'turbo:osrm-down'
 OSRM_BACKOFF_SECONDS = 300  # after a failure, use the estimate for 5 minutes
 
 
+AVERAGE_SPEED_KMH = 25     # used for ETAs when the routing server gives no duration
+
+
 @dataclass
 class Route:
     distance_km: Decimal
     geometry: list = field(default_factory=list)   # [[lat, lng], ...] for drawing on a map
     source: str = 'estimate'                       # 'osrm' or 'estimate'
+    duration_min: float = 0.0                      # expected driving time
 
 
 def parse_point(lat, lng, label):
@@ -62,27 +66,37 @@ def _osrm_route(lat1, lng1, lat2, lng2):
             data = json.load(resp)
         route = data['routes'][0]
         coords = [[lat, lng] for lng, lat in route['geometry']['coordinates']]
-        return route['distance'] / 1000.0, coords
+        return route['distance'] / 1000.0, coords, route.get('duration', 0) / 60.0
     except Exception as exc:  # network error, bad response, no route...
         logger.warning("OSRM routing failed, using estimates for %ss: %s", OSRM_BACKOFF_SECONDS, exc)
         cache.set(OSRM_DOWN_KEY, True, OSRM_BACKOFF_SECONDS)
         return None
 
 
-def get_route(lat1, lng1, lat2, lng2):
+def route_between(lat1, lng1, lat2, lng2):
+    """Road route between two points, without booking validation (used by live tracking)."""
     osrm = _osrm_route(lat1, lng1, lat2, lng2)
     if osrm:
-        km, geometry, source = osrm[0], osrm[1], 'osrm'
+        km, geometry, minutes, source = osrm[0], osrm[1], osrm[2], 'osrm'
     else:
         km = haversine_km(lat1, lng1, lat2, lng2) * ROAD_FACTOR
         geometry, source = [[lat1, lng1], [lat2, lng2]], 'estimate'
-
+        minutes = 0
+    if not minutes:
+        minutes = km / AVERAGE_SPEED_KMH * 60
     km = Decimal(str(km)).quantize(TWO_PLACES, ROUND_HALF_UP)
+    return Route(distance_km=km, geometry=geometry, source=source, duration_min=round(minutes, 1))
+
+
+def get_route(lat1, lng1, lat2, lng2):
+    """Route for booking a ride: rejects zero-length and overly long trips."""
+    route = route_between(lat1, lng1, lat2, lng2)
+    km = route.distance_km
     if km <= 0:
         raise ValidationError("Pickup and drop are the same place.")
     if km > MAX_DISTANCE_KM:
         raise ValidationError("That trip is too long to book.")
-    return Route(distance_km=km, geometry=geometry, source=source)
+    return route
 
 
 def calculate_fare(car_type, distance_km):

@@ -24,8 +24,8 @@ from adminpages import services as admin_services
 from driverpages import services as driver_services
 from driverpages.models import AvailabilityStatus, DriverProfile, Earning
 from riderpages import services as ride_services
-from riderpages.models import (BASE_FARE, CAR_CHOICES, PAYMENT_METHOD_CHOICES, RATE_PER_KM, STATUS_CHOICES,
-                               ContactMessage, Ride)
+from riderpages.models import (ACTIVE_STATUSES, BASE_FARE, CAR_CHOICES, PAYMENT_METHOD_CHOICES, RATE_PER_KM,
+                               STATUS_CHOICES, ContactMessage, Ride)
 from riderpages.pricing import all_fares
 
 from . import serializers as s
@@ -163,7 +163,7 @@ class RiderRideViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewset
         qs = _rides().filter(user=self.request.user)
         state = self.request.query_params.get('state')
         if state == 'active':
-            qs = qs.filter(status__in=['PENDING', 'CONFIRMED', 'ACCEPTED', 'IN_PROGRESS'])
+            qs = qs.filter(status__in=ACTIVE_STATUSES)
         elif state == 'past':
             qs = qs.filter(status__in=['COMPLETED', 'CANCELLED'])
         return qs
@@ -204,7 +204,8 @@ class DriverProfileView(APIView):
     """GET / PATCH the driver's profile. PATCH accepts JSON or multipart (for profile_photo)."""
     permission_classes = [IsDriver]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
-    FIELDS = ('full_name', 'phone', 'email', 'license_number', 'vehicle_info', 'availability_status')
+    FIELDS = ('full_name', 'phone', 'email', 'license_number', 'vehicle_info', 'vehicle_number',
+              'vehicle_type', 'availability_status')
 
     def get(self, request):
         driver = driver_services.get_driver(request.user)

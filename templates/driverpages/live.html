@@ -1,0 +1,91 @@
+{% extends 'driverpages/base.html' %}
+{% load static %}
+{% block title %}Live location{% endblock %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'tracking/tracking.css' %}" />
+  <style>
+    .trk-driver-shell { margin-top: 18px; border-radius: 18px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); }
+    @media (max-width: 860px) { .container { padding: 12px; } .trk-driver-shell { border-radius: 14px; } }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="trk trk-driver-shell" style="--trk-top: 150px;">
+  <aside class="trk-panel">
+    <div class="trk-head">
+      <div>
+        <h1>Live location</h1>
+        <span class="trk-small" id="trk-driver-status">{{ driver.get_availability_status_display }}</span>
+      </div>
+      <label class="trk-switch" title="Go online to receive rides and share your location">
+        <input type="checkbox" id="trk-online" {% if driver.availability_status != 'offline' %}checked{% endif %} />
+        <span class="track"></span>
+        <span id="trk-online-label">{% if driver.availability_status != 'offline' %}Online{% else %}Offline{% endif %}</span>
+      </label>
+    </div>
+
+    <div id="trk-gps-banner" class="trk-banner warn trk-hidden"><i class="bx bx-error"></i><span></span></div>
+
+    <div class="trk-card">
+      <div class="trk-person">
+        {% if driver.profile_photo %}
+          <img class="trk-avatar" src="{{ driver.profile_photo.url }}" alt="">
+        {% else %}
+          <div class="trk-avatar">{{ driver.user.full_name|first }}</div>
+        {% endif %}
+        <div class="trk-person-info">
+          <strong>{{ driver.user.full_name }}</strong>
+          <span class="trk-small">{{ driver.vehicle_info|default:"Add your vehicle in Settings" }}{% if driver.vehicle_type %} · {{ driver.get_vehicle_type_display }}{% endif %}</span>
+          {% if driver.vehicle_number %}<span class="trk-plate">{{ driver.vehicle_number }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="trk-metrics">
+        <div class="trk-metric"><span>Accuracy</span><strong id="trk-accuracy">—</strong></div>
+        <div class="trk-metric"><span>Speed</span><strong id="trk-speed">—</strong></div>
+        <div class="trk-metric"><span>Last sent</span><strong id="trk-updated" style="font-size:.9rem">—</strong></div>
+      </div>
+      <div>
+        <span class="trk-small">Current position</span>
+        <div id="trk-coords" style="font-variant-numeric: tabular-nums; font-weight: 600;">—</div>
+        <div id="trk-address" class="trk-small" style="margin-top:4px"></div>
+      </div>
+    </div>
+
+    <div id="trk-ride" style="display:grid;gap:14px"></div>
+
+    <p class="trk-small"><i class="bx bx-info-circle"></i> While you're online your location is sent every 3 seconds. Riders only see it during a ride you've accepted. Keep this page open and your screen on — browsers pause GPS in the background (the Turbo Driver app keeps tracking with the screen off).</p>
+  </aside>
+
+  <div class="trk-mapwrap">
+    <div id="trk-map" class="trk-map" role="region" aria-label="Live map"></div>
+    <div class="trk-map-overlay">
+      <span id="trk-gps-chip" class="trk-chip"></span>
+      <span id="trk-net-chip" class="trk-chip trk-hidden"></span>
+    </div>
+    <div class="trk-fab"><button type="button" id="trk-recenter" class="trk-btn round" aria-label="Re-centre map"><i class="bx bx-target-lock"></i></button></div>
+  </div>
+</div>
+
+<!-- OTP entry -->
+<div id="trk-otp-modal" class="trk trk-modal" role="dialog" aria-modal="true" aria-labelledby="otp-title" style="height:auto;min-height:0">
+  <form id="trk-otp-form" class="trk-card" autocomplete="off">
+    <h2 id="otp-title">Verify passenger OTP</h2>
+    <p class="trk-muted">Ask the rider for the 6-digit code shown on their screen.</p>
+    <input id="trk-otp-input" class="trk-otp-input" inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="one-time-code" aria-label="6-digit OTP" placeholder="••••••" />
+    <p id="trk-otp-error" class="trk-error" role="alert"></p>
+    <div class="trk-actions two">
+      <button type="button" id="trk-otp-cancel" class="trk-btn ghost">Cancel</button>
+      <button type="submit" id="trk-otp-submit" class="trk-btn primary"><i class="bx bx-check"></i>Verify OTP</button>
+    </div>
+  </form>
+</div>
+<div id="trk-toasts" aria-live="polite"></div>
+
+{{ trk_config|json_script:"trk-config" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'tracking/map.js' %}"></script>
+<script src="{% static 'tracking/common.js' %}"></script>
+<script src="{% static 'tracking/driver.js' %}"></script>
+{% endblock %}

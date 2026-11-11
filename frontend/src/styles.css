@@ -235,3 +235,31 @@ tr.inactive td { opacity: .5; }
   .ride-side { align-items: flex-start; width: 100%; }
   .truncate { max-width: 160px; }
 }
+
+/* ---------- live tracking ---------- */
+.live-map { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+.live-mk { background: none !important; border: 0 !important; }
+.live-pin { width: 32px; height: 32px; margin: 0 auto; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: grid; place-items: center;
+  border: 3px solid #fff; box-shadow: 0 6px 14px rgba(0,0,0,.4); }
+.live-pin span { transform: rotate(45deg); color: #fff; font: 800 12px/1 Inter, sans-serif; }
+.live-pin.pickup { background: #16a34a; }
+.live-pin.drop { background: #dc2626; }
+.gps-chip { display: inline-flex; align-items: center; gap: 6px; padding: .3rem .75rem; border-radius: 999px; font-size: .8rem; font-weight: 600;
+  border: 1px solid var(--border); background: var(--panel); }
+.gps-chip.ok { color: #86efac; border-color: rgba(34,197,94,.45); }
+.gps-chip.warn { color: #fde68a; border-color: rgba(251,191,36,.5); }
+.gps-chip.bad { color: #fca5a5; border-color: rgba(239,68,68,.5); }
+.gps-chip small { font-weight: 500; opacity: .8; }
+.pulse { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.8s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.6); } 70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+.stats.compact { grid-template-columns: repeat(3, 1fr); }
+.stats.compact .stat-value { font-size: 1.1rem; }
+.otp-card { text-align: center; border-style: dashed; border-color: rgba(96,165,250,.55); background: linear-gradient(180deg, rgba(59,130,246,.14), rgba(59,130,246,.03)); }
+.otp-code { font-size: 2.6rem; font-weight: 800; letter-spacing: .3em; padding-left: .3em; font-variant-numeric: tabular-nums; }
+.otp-code.expired { color: var(--muted); text-decoration: line-through; }
+.otp-card .btn { justify-self: center; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,.65); display: grid; place-items: center; padding: 18px; }
+.modal { width: 100%; max-width: 380px; }
+.otp-input { font-size: 2rem; font-weight: 800; letter-spacing: .45em; text-align: center; padding-left: .45em; font-variant-numeric: tabular-nums; }
+.plate { display: inline-block; width: fit-content; padding: .15rem .5rem; border-radius: 6px; background: #f4f4f5; color: #0f0f10; font-weight: 800; letter-spacing: .06em; font-size: .8rem; }
+.badge-arrived { background: #7c3aed; }

@@ -21,12 +21,20 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
   String? _error;
   bool _busy = false;
   Timer? _poll;
+  Timer? _trackTimer;
+  bool _disposed = false;
+  TripTracking? _trip;
+  Map<String, dynamic>? _otp;
+  DateTime? _otpFetchedAt;
 
   @override
   void initState() {
     super.initState();
     _ride = widget.initial;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _load();
+      _trackLoop();
+    });
     // Keep the status fresh while the ride is in progress.
     _poll = Timer.periodic(const Duration(seconds: 10), (_) {
       if (_ride?.isActive ?? true) _load(quiet: true);
@@ -35,8 +43,62 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
 
   @override
   void dispose() {
+    _disposed = true;
     _poll?.cancel();
+    _trackTimer?.cancel();
     super.dispose();
+  }
+
+  /// Live driver position every 3 s during the trip. The next request starts only
+  /// after the previous one finished, so slow networks never pile up requests.
+  Future<void> _trackLoop() async {
+    if (_disposed) return;
+    final started = DateTime.now();
+    final ride = _ride;
+    if (ride != null && (ride.isTrip || ride.status == 'CONFIRMED')) {
+      try {
+        final api = AuthScope.read(context).api;
+        final json = await api.get('/rider/ride/tracking/', query: {'ride_id': '${widget.rideId}'});
+        final trip = TripTracking.fromJson(json as Map<String, dynamic>);
+        final statusChanged = _trip?.status != trip.status;
+        if (!_disposed) setState(() => _trip = trip);
+        if (statusChanged && !_disposed) _load(quiet: true);
+        await _maybeFetchOtp(trip, statusChanged);
+      } catch (_) {
+        // keep the last known position; retry on the next tick
+      }
+    }
+    if (_disposed) return;
+    final wait = const Duration(seconds: 3) - DateTime.now().difference(started);
+    _trackTimer = Timer(wait.isNegative ? Duration.zero : wait, _trackLoop);
+  }
+
+  Future<void> _maybeFetchOtp(TripTracking trip, bool statusChanged) async {
+    if (!trip.needsOtp) {
+      if (_otp != null && !_disposed) setState(() => _otp = null);
+      return;
+    }
+    final expires = DateTime.tryParse(str(_otp?['expires_at']));
+    final stale = _otpFetchedAt == null || DateTime.now().difference(_otpFetchedAt!) > const Duration(seconds: 30);
+    if (_otp == null || statusChanged || stale || (expires != null && expires.isBefore(DateTime.now()))) {
+      try {
+        final json = await AuthScope.read(context).api.get('/rider/ride/otp/', query: {'ride_id': '${widget.rideId}'});
+        _otpFetchedAt = DateTime.now();
+        if (!_disposed) setState(() => _otp = json as Map<String, dynamic>);
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _newCode() async {
+    try {
+      final json = await AuthScope.read(context).api.post('/rider/ride/otp/regenerate/', {'ride_id': widget.rideId});
+      _otpFetchedAt = DateTime.now();
+      if (!mounted) return;
+      setState(() => _otp = json as Map<String, dynamic>);
+      showSnack(context, 'New code ready. The old one no longer works.');
+    } catch (e) {
+      if (mounted) showSnack(context, errorText(e), error: true);
+    }
   }
 
   Future<void> _load({bool quiet = false}) async {
@@ -126,6 +188,27 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                if (_otp != null && (_trip?.needsOtp ?? false)) ...[
+                  _OtpCard(otp: _otp!, onNewCode: _newCode),
+                  const SizedBox(height: 12),
+                ],
+                if (_trip != null && _trip!.isTrip) ...[
+                  Row(children: [
+                    Expanded(child: Text(_trip!.stageLabel, style: const TextStyle(fontWeight: FontWeight.w700))),
+                    _LiveChip(trip: _trip!),
+                  ]),
+                  const SizedBox(height: 8),
+                  TripMetrics(_trip!),
+                  const SizedBox(height: 8),
+                  TripMap(tracking: _trip, height: 300, userAgent: 'com.turbocab.turbo_rider'),
+                  const SizedBox(height: 12),
+                ],
+                if (_trip?.status == 'CONFIRMED')
+                  const Card(child: ListTile(
+                    leading: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                    title: Text('Finding you a driver…'),
+                    subtitle: Text('This screen updates automatically when a driver accepts.'),
+                  )),
                 if (ride.driver != null)
                   Card(
                     child: ListTile(
@@ -134,8 +217,12 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                         child: ride.driver!.photo == null ? const Icon(Icons.person) : null,
                       ),
                       title: Text(ride.driver!.fullName),
-                      subtitle: Text(ride.driver!.vehicleInfo?.isNotEmpty == true ? ride.driver!.vehicleInfo! : 'Your driver'),
-                      trailing: ride.status == 'ACCEPTED' && (ride.driver!.phone ?? '').isNotEmpty
+                      subtitle: Text([
+                        if ((ride.driver!.vehicleInfo ?? '').isNotEmpty) ride.driver!.vehicleInfo!,
+                        if ((ride.driver!.vehicleType ?? '').isNotEmpty) ride.driver!.vehicleType!,
+                        if ((ride.driver!.vehicleNumber ?? '').isNotEmpty) ride.driver!.vehicleNumber!,
+                      ].join(' · ').ifEmpty('Your driver')),
+                      trailing: ride.isTrip && (ride.driver!.phone ?? '').isNotEmpty
                           ? IconButton.filled(onPressed: () => _call(ride.driver!.phone!), icon: const Icon(Icons.call))
                           : null,
                     ),
@@ -161,11 +248,6 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                     ),
                   ]),
                 ],
-                if (ride.status == 'CONFIRMED')
-                  const ListTile(
-                    leading: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-                    title: Text('Waiting for a driver to accept…'),
-                  ),
                 if (ride.status == 'COMPLETED')
                   ride.rating != null
                       ? ListTile(leading: const Icon(Icons.star, color: Colors.amber), title: Text('You rated this ride ${ride.rating!.toStringAsFixed(0)} ★'))
@@ -259,4 +341,109 @@ class _TransactionDialogState extends State<_TransactionDialog> {
           FilledButton(onPressed: () => Navigator.pop(context, _txn.text), child: const Text('Confirm')),
         ],
       );
+}
+
+
+extension on String {
+  String ifEmpty(String fallback) => isEmpty ? fallback : this;
+}
+
+class _LiveChip extends StatelessWidget {
+  const _LiveChip({required this.trip});
+
+  final TripTracking trip;
+
+  @override
+  Widget build(BuildContext context) {
+    final (color, text) = trip.driver == null
+        ? (Colors.amber, "Waiting for driver's GPS")
+        : trip.driverStale
+            ? (Colors.amber, 'Driver GPS signal lost')
+            : (Colors.green, 'Live');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(99), border: Border.all(color: color)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.circle, size: 8, color: color),
+        const SizedBox(width: 6),
+        Text(text, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
+}
+
+/// "Your ride verification OTP" with an expiry countdown.
+class _OtpCard extends StatefulWidget {
+  const _OtpCard({required this.otp, required this.onNewCode});
+
+  final Map<String, dynamic> otp;
+  final Future<void> Function() onNewCode;
+
+  @override
+  State<_OtpCard> createState() => _OtpCardState();
+}
+
+class _OtpCardState extends State<_OtpCard> {
+  Timer? _tick;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  Future<void> _newCode() async {
+    setState(() => _busy = true);
+    await widget.onNewCode();
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final o = widget.otp;
+    final expires = DateTime.tryParse(str(o['expires_at']))?.toLocal();
+    final left = expires == null ? 0 : expires.difference(DateTime.now()).inSeconds;
+    final expired = o['is_expired'] == true || left <= 0;
+    final locked = o['is_locked'] == true;
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: scheme.primary.withAlpha(140))),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(children: [
+          const Text('Your ride verification OTP', style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          SelectableText(
+            expired ? '••••••' : str(o['otp']),
+            style: TextStyle(fontSize: 40, fontWeight: FontWeight.w800, letterSpacing: 10,
+                color: expired ? Colors.white38 : Colors.white, fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            locked
+                ? 'Too many wrong attempts. Get a new code to try again.'
+                : expired
+                    ? 'This code has expired.'
+                    : 'Share this code with your driver only after you get in. Expires in ${left ~/ 60}:${(left % 60).toString().padLeft(2, '0')}.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white60, fontSize: 13),
+          ),
+          const SizedBox(height: 10),
+          if (expired || locked)
+            FilledButton.icon(onPressed: _busy ? null : _newCode, icon: const Icon(Icons.refresh), label: const Text('Get a new code'))
+          else
+            OutlinedButton.icon(onPressed: _busy ? null : _newCode, icon: const Icon(Icons.refresh), label: const Text('Get a new code')),
+        ]),
+      ),
+    );
+  }
 }

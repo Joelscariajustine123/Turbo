@@ -11,7 +11,7 @@ export const day = (iso) =>
 
 /** GET `path` (re-fetches when it changes). Optional `pollMs` refreshes in the background. */
 export function useApi(path, { pollMs } = {}) {
-  const [state, setState] = useState({ data: null, error: null, loading: true });
+  const [state, setState] = useState({ data: null, error: null, loading: !!path });
   const pathRef = useRef(path);
   pathRef.current = path;
 
@@ -31,12 +31,12 @@ export function useApi(path, { pollMs } = {}) {
   }, [path, load]);
 
   useEffect(() => {
-    if (!pollMs) return undefined;
+    if (!pollMs || !path) return undefined;
     const id = setInterval(() => {
       if (document.visibilityState === 'visible') load(true);
     }, pollMs);
     return () => clearInterval(id);
-  }, [pollMs, load]);
+  }, [pollMs, load, path]);
 
   return { ...state, reload: load, setData: (data) => setState((s) => ({ ...s, data })) };
 }

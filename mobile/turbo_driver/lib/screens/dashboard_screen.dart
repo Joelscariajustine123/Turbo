@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:turbo_core/turbo_core.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../location_service.dart';
+
 /// Ongoing rides + new requests, refreshed every 10 seconds.
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,20 +23,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _loading = true;
   int? _busyRide;
   Timer? _poll;
+  DriverLocationService? _location;
 
   ApiClient get _api => AuthScope.read(context).api;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _location = DriverLocationService(_api)
+        ..addListener(_onLocation)
+        ..onTripChanged = (() => _load(quiet: true))
+        ..onStoppedByServer = ((msg) {
+          if (mounted) showSnack(context, msg, error: true);
+          _load(quiet: true);
+        });
+      _load();
+    });
     _poll = Timer.periodic(const Duration(seconds: 10), (_) => _load(quiet: true));
+  }
+
+  void _onLocation() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _poll?.cancel();
+    _location?.removeListener(_onLocation);
+    _location?.dispose();
     super.dispose();
+  }
+
+  /// Share GPS whenever the driver is online; stop when offline.
+  void _syncTracking() {
+    final loc = _location;
+    if (loc == null || _profile == null) return;
+    final online = _profile!.availability != 'offline';
+    if (online && !loc.running && loc.gps != GpsState.denied && loc.gps != GpsState.serviceOff) loc.start();
+    if (!online && loc.running) loc.stop();
+  }
+
+  Future<void> _statusAction(Ride ride, String status, String done) async {
+    setState(() => _busyRide = ride.id);
+    try {
+      await _api.post('/driver/ride/status/', {'ride_id': ride.id, 'status': status});
+      if (mounted) showSnack(context, done);
+    } catch (e) {
+      if (mounted) showSnack(context, errorText(e), error: true);
+    } finally {
+      await _load(quiet: true);
+      if (mounted) setState(() => _busyRide = null);
+    }
+  }
+
+  Future<void> _verifyOtp(Ride ride) async {
+    final ok = await showDialog<bool>(context: context, builder: (_) => _OtpDialog(api: _api, rideId: ride.id));
+    if (ok == true && mounted) {
+      showSnack(context, 'Passenger verified. Ride started — head to the destination.');
+      await _load(quiet: true);
+    }
   }
 
   Future<void> _load({bool quiet = false}) async {
@@ -54,6 +102,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _availability = (results[3] as Meta).availability;
         _error = null;
       });
+      _syncTracking();
     } catch (e) {
       if (mounted && !quiet) setState(() => _error = errorText(e));
     } finally {
@@ -79,6 +128,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final json = await _api.patch('/driver/profile/', {'availability_status': value});
       if (mounted) setState(() => _profile = DriverProfile.fromJson(json as Map<String, dynamic>));
+      _syncTracking();
     } catch (e) {
       if (mounted) showSnack(context, errorText(e), error: true);
     }
@@ -127,6 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onRefresh: _load,
               child: ListView(padding: const EdgeInsets.all(12), children: [
                 ErrorBanner(_error, onRetry: _load),
+                if (_location != null) _GpsBanner(service: _location!, online: !offline),
                 if (_profile != null && (_profile!.licenseNumber.isEmpty || _profile!.vehicleInfo.isEmpty))
                   const Card(
                     child: ListTile(
@@ -136,19 +187,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 _Header('Ongoing rides', _ongoing.length),
                 if (_ongoing.isEmpty) const EmptyState('No ongoing rides.', icon: Icons.directions_car_outlined),
-                for (final r in _ongoing)
+                for (final r in _ongoing) ...[
                   _RideCard(
                     ride: r,
                     busy: _busyRide == r.id,
                     onCall: (r.rider.phone ?? '').isNotEmpty ? () => _call(r.rider.phone!) : null,
                     actions: [
-                      FilledButton.icon(
-                        onPressed: _busyRide == null ? () => _rideAction(r, 'complete', 'Ride completed. Earnings updated.') : null,
-                        icon: const Icon(Icons.flag),
-                        label: const Text('Complete'),
-                      ),
+                      StatusChip(r.status, r.statusDisplay),
+                      if (r.status == 'ACCEPTED')
+                        OutlinedButton(
+                          onPressed: _busyRide == null
+                              ? () => _statusAction(r, 'ARRIVED', "Marked as arrived. Ask the rider for their OTP.")
+                              : null,
+                          child: const Text("I've arrived"),
+                        ),
+                      if (r.status == 'ACCEPTED' || r.status == 'ARRIVED')
+                        FilledButton.icon(
+                          onPressed: _busyRide == null ? () => _verifyOtp(r) : null,
+                          icon: const Icon(Icons.key),
+                          label: const Text('Verify OTP'),
+                        ),
+                      if (r.status == 'IN_PROGRESS')
+                        FilledButton.icon(
+                          onPressed: _busyRide == null ? () => _statusAction(r, 'COMPLETED', 'Ride completed. Earnings updated.') : null,
+                          icon: const Icon(Icons.flag),
+                          label: const Text('Complete ride'),
+                        ),
                     ],
                   ),
+                  if (_location?.tracking?.rideId == r.id) ...[
+                    TripMetrics(_location!.tracking!),
+                    const SizedBox(height: 6),
+                    TripMap(
+                      tracking: _location!.tracking,
+                      me: _location!.latLng,
+                      meHeading: _location!.position?.heading,
+                      height: 280,
+                      userAgent: 'com.turbocab.turbo_driver',
+                    ),
+                    const SizedBox(height: 6),
+                    if (_location!.tracking!.target != null)
+                      OutlinedButton.icon(
+                        onPressed: () => launchUrl(
+                          Uri.parse('https://www.google.com/maps/dir/?api=1&travelmode=driving'
+                              '&destination=${_location!.tracking!.target!.latitude},${_location!.tracking!.target!.longitude}'),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        icon: const Icon(Icons.navigation),
+                        label: const Text('Navigate in Google Maps'),
+                      ),
+                    const SizedBox(height: 8),
+                  ],
+                ],
                 const SizedBox(height: 12),
                 _Header('New requests', _available.length),
                 if (offline)
@@ -163,7 +253,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onPressed: _busyRide == null ? () => _rideAction(r, 'decline', 'Ride declined.') : null,
                         child: const Text('Decline'),
                       ),
-                      const SizedBox(width: 8),
                       FilledButton(
                         onPressed: _busyRide == null && !offline ? () => _rideAction(r, 'accept', 'Ride accepted! Head to the pickup.') : null,
                         child: const Text('Accept'),
@@ -241,9 +330,114 @@ class _RideCard extends StatelessWidget {
               const SizedBox(height: 8),
               busy
                   ? const LinearProgressIndicator()
-                  : Row(mainAxisAlignment: MainAxisAlignment.end, children: actions),
+                  : Wrap(alignment: WrapAlignment.end, crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, runSpacing: 8, children: actions),
             ]),
           ),
         ),
+      );
+}
+
+
+class _GpsBanner extends StatelessWidget {
+  const _GpsBanner({required this.service, required this.online});
+
+  final DriverLocationService service;
+  final bool online;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!online) {
+      return const Card(child: ListTile(leading: Icon(Icons.location_off), title: Text('Offline — your location is not shared.')));
+    }
+    final (IconData icon, Color color, String text) = switch (service.gps) {
+      GpsState.live => (Icons.gps_fixed, Colors.green, 'GPS live'),
+      GpsState.waiting => (Icons.gps_not_fixed, Colors.amber, 'Finding GPS…'),
+      GpsState.weak => (Icons.gps_not_fixed, Colors.amber, 'GPS signal weak'),
+      GpsState.denied => (Icons.gps_off, Colors.redAccent, 'Location permission needed'),
+      GpsState.serviceOff => (Icons.gps_off, Colors.redAccent, 'Location is turned off'),
+      GpsState.off => (Icons.gps_off, Colors.white54, 'Location off'),
+    };
+    final sent = service.lastSentAt == null ? '' : ' · sent ${DateTime.now().difference(service.lastSentAt!).inSeconds}s ago';
+    return Card(
+      child: ListTile(
+        leading: Icon(icon, color: color),
+        title: Text(service.networkOk ? '$text$sent' : 'No connection — retrying', style: TextStyle(color: color)),
+        subtitle: Text(service.error ??
+            (service.position == null
+                ? 'Your position is sent every 3 seconds while you are online.'
+                : '${service.position!.latitude.toStringAsFixed(5)}, ${service.position!.longitude.toStringAsFixed(5)}'
+                    ' · ±${service.position!.accuracy.round()} m')),
+        trailing: service.gps == GpsState.denied || service.gps == GpsState.serviceOff
+            ? TextButton(onPressed: service.start, child: const Text('Retry'))
+            : null,
+      ),
+    );
+  }
+}
+
+/// Enter the rider's 6-digit code. Pops `true` when the ride has started.
+class _OtpDialog extends StatefulWidget {
+  const _OtpDialog({required this.api, required this.rideId});
+
+  final ApiClient api;
+  final int rideId;
+
+  @override
+  State<_OtpDialog> createState() => _OtpDialogState();
+}
+
+class _OtpDialogState extends State<_OtpDialog> {
+  final _code = TextEditingController();
+  String? _error;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _code.dispose();
+    super.dispose();
+  }
+
+  Future<void> _verify() async {
+    if (!RegExp(r'^\d{6}$').hasMatch(_code.text)) {
+      setState(() => _error = "Enter the 6-digit code from the rider's screen.");
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.api.post('/driver/ride/verify-otp/', {'ride_id': widget.rideId, 'otp': _code.text});
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) setState(() => _error = errorText(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Verify passenger OTP'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text("Ask the rider for the 6-digit code shown on their screen."),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _code,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            textAlign: TextAlign.center,
+            autofillHints: const [AutofillHints.oneTimeCode],
+            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: 10),
+            decoration: const InputDecoration(counterText: '', hintText: '••••••'),
+            onSubmitted: (_) => _verify(),
+          ),
+          if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(onPressed: _busy ? null : _verify, child: Text(_busy ? 'Verifying…' : 'Verify OTP')),
+        ],
       );
 }

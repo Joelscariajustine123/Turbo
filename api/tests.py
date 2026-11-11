@@ -4,6 +4,7 @@ from rest_framework.test import APITestCase
 from account.models import CustomUser
 from account.tests import PASSWORD, make_user
 from driverpages.models import Earning, Rating
+from riderpages import otp as otp_service
 from riderpages.models import ContactMessage, Ride
 
 COORDS = {'pickup_lat': 11.8745, 'pickup_lng': 75.3704, 'drop_lat': 11.95, 'drop_lng': 75.42}
@@ -125,6 +126,12 @@ class RideFlowApiTests(ApiTestCase):
         self.assertEqual(self.client.get('/api/driver/profile/').data['availability_status'], 'on-trip')
         ongoing = self.client.get('/api/driver/rides/ongoing/').data['results']
         self.assertEqual(ongoing[0]['rider']['phone'], self.rider.phone)
+
+        # A ride can't be completed until the passenger's OTP is verified.
+        self.assertEqual(self.client.post(f'/api/driver/rides/{ride_id}/complete/').status_code, 400)
+        code = otp_service.for_rider(Ride.objects.get(pk=ride_id)).code
+        resp = self.client.post('/api/driver/ride/verify-otp/', {'ride_id': ride_id, 'otp': code}, format='json')
+        self.assertEqual(resp.status_code, 200, resp.content)
 
         resp = self.client.post(f'/api/driver/rides/{ride_id}/complete/')
         self.assertEqual(resp.data['status'], 'COMPLETED')

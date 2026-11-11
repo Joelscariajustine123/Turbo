@@ -55,13 +55,15 @@ class User {
 }
 
 class RidePerson {
-  RidePerson({required this.id, required this.fullName, this.phone, this.vehicleInfo, this.photo});
+  RidePerson({required this.id, required this.fullName, this.phone, this.vehicleInfo, this.vehicleNumber, this.vehicleType, this.photo});
 
   factory RidePerson.fromJson(Map<String, dynamic> j) => RidePerson(
         id: j['id'] as int,
         fullName: str(j['full_name']),
         phone: j['phone'] as String?,
         vehicleInfo: j['vehicle_info'] as String?,
+        vehicleNumber: j['vehicle_number'] as String?,
+        vehicleType: j['vehicle_type'] as String?,
         photo: j['profile_photo'] as String?,
       );
 
@@ -69,6 +71,8 @@ class RidePerson {
   final String fullName;
   final String? phone;
   final String? vehicleInfo;
+  final String? vehicleNumber;
+  final String? vehicleType;
   final String? photo;
 }
 
@@ -85,6 +89,7 @@ class Ride {
     required this.statusDisplay,
     required this.rider,
     required this.canCancel,
+    this.otpVerified = false,
     this.pickupLat,
     this.pickupLng,
     this.dropLat,
@@ -119,6 +124,7 @@ class Ride {
         driver: j['driver'] == null ? null : RidePerson.fromJson(j['driver'] as Map<String, dynamic>),
         rating: toDoubleOrNull(j['rating']),
         canCancel: j['can_cancel'] == true,
+        otpVerified: j['otp_verified'] == true,
       );
 
   final int id;
@@ -142,8 +148,12 @@ class Ride {
   final RidePerson? driver;
   final double? rating;
   final bool canCancel;
+  final bool otpVerified;
 
-  bool get isActive => const ['PENDING', 'CONFIRMED', 'ACCEPTED', 'IN_PROGRESS'].contains(status);
+  bool get isActive => const ['PENDING', 'CONFIRMED', 'ACCEPTED', 'ARRIVED', 'IN_PROGRESS'].contains(status);
+
+  /// Driver assigned and the trip is under way (live location is shared).
+  bool get isTrip => const ['ACCEPTED', 'ARRIVED', 'IN_PROGRESS'].contains(status);
 }
 
 class DriverProfile {
@@ -154,6 +164,8 @@ class DriverProfile {
     required this.phone,
     required this.licenseNumber,
     required this.vehicleInfo,
+    this.vehicleNumber = '',
+    this.vehicleType = '',
     required this.availability,
     required this.availabilityDisplay,
     required this.isActive,
@@ -167,6 +179,8 @@ class DriverProfile {
         phone: str(j['phone']),
         licenseNumber: str(j['license_number']),
         vehicleInfo: str(j['vehicle_info']),
+        vehicleNumber: str(j['vehicle_number']),
+        vehicleType: str(j['vehicle_type']),
         availability: str(j['availability_status']),
         availabilityDisplay: str(j['availability_display']),
         isActive: j['is_active'] != false,
@@ -179,6 +193,8 @@ class DriverProfile {
   final String phone;
   final String licenseNumber;
   final String vehicleInfo;
+  final String vehicleNumber;
+  final String vehicleType;
   final String availability;
   final String availabilityDisplay;
   final bool isActive;

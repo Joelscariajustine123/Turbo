@@ -34,6 +34,8 @@
               <td class="actions-cell" style="white-space:nowrap;text-align:right;">
                 {% if ride.status == 'PENDING' %}
                   <a href="{% url 'riderpages:booking_confirmation' ride.id %}" class="btn btn-primary btn-sm">Pay now</a>
+                {% elif ride.status == 'CONFIRMED' or ride.status == 'ACCEPTED' or ride.status == 'ARRIVED' or ride.status == 'IN_PROGRESS' %}
+                  <a href="{% url 'riderpages:track_ride' ride.id %}" class="btn btn-primary btn-sm"><i class="bx bx-current-location"></i>Track</a>
                 {% else %}
                   <a href="{% url 'riderpages:booking_confirmation' ride.id %}" class="link-btn primary">Details</a>
                 {% endif %}

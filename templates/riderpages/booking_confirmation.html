@@ -42,8 +42,9 @@
           {% csrf_token %}
           <button type="submit" class="link-btn danger" onclick="return confirm('Cancel this ride?');">Cancel booking</button>
         </form>
-      {% elif ride.status == 'CONFIRMED' %}
-        <div class="alert alert-info"><i class="bx bx-loader-alt bx-spin"></i>Waiting for a driver to accept your ride…</div>
+      {% elif ride.status == 'CONFIRMED' or ride.status == 'ACCEPTED' or ride.status == 'ARRIVED' or ride.status == 'IN_PROGRESS' %}
+        <div class="alert alert-info"><i class="bx bx-loader-alt bx-spin"></i>{% if ride.status == 'CONFIRMED' %}Waiting for a driver to accept your ride…{% else %}{{ ride.get_status_display }} — follow your driver live.{% endif %}</div>
+        <a href="{% url 'riderpages:track_ride' ride.id %}" class="btn btn-primary btn-block"><i class="bx bx-current-location"></i>Track your ride live</a>
       {% else %}
         <p class="muted">This ride is <strong>{{ ride.get_status_display|lower }}</strong>.</p>
       {% endif %}

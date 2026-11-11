@@ -31,6 +31,7 @@ USER turbo
 # Render provides $PORT. Migrations run on start because the free plan has no pre-deploy step.
 CMD python manage.py migrate --noinput \
  && python manage.py ensure_admin \
+ && python manage.py purge_location_history \
  && exec gunicorn turbo.wsgi:application \
       --bind 0.0.0.0:${PORT:-8000} \
       --workers ${WEB_CONCURRENCY:-2} \

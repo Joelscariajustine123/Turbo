@@ -12,7 +12,9 @@ dependencies:
     sdk: flutter
   turbo_core:
     path: ../turbo_core
+  geolocator: ^13.0.1
   image_picker: ^1.1.2
+  latlong2: ^0.9.1
   url_launcher: ^6.3.0
 
 dev_dependencies:
