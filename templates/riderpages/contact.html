@@ -1,4 +1,5 @@
 {% extends 'riderpages/base.html' %}
+{% block title %}Contact{% endblock %}
 {% block content %}
 
     <div class="container">
@@ -10,10 +11,11 @@
             <p><i class="fas fa-envelope"></i> Turbocabs@gmail.com</p>
         </div>
 
-        <form>
-            <input type="text" name="name" placeholder="Your Name" required>
-            <input type="email" name="email" placeholder="Your Email" required>
-            <textarea name="message" rows="4" placeholder="Your Message" required></textarea>
+        <form method="post" action="{% url 'riderpages:contact' %}">
+            {% csrf_token %}
+            <input type="text" name="name" placeholder="Your Name" value="{{ form_data.name|default:'' }}" maxlength="100" required>
+            <input type="email" name="email" placeholder="Your Email" value="{{ form_data.email|default:'' }}" required>
+            <textarea name="message" rows="4" placeholder="Your Message" required>{{ form_data.message|default:'' }}</textarea>
             <button type="submit">Send Message</button>
         </form>
     </div>

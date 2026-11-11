@@ -1,5 +1,5 @@
 {% extends 'riderpages/base.html' %}
-{% load static %}
+{% block title %}Confirm Ride{% endblock %}
 
 {% block content %}
 <style>
@@ -120,7 +120,10 @@
         <p><strong>Distance:</strong> {{ ride.distance }} km</p>
         <p><strong>Vehicle:</strong> {{ ride.get_car_type_display }}</p>
     </div>
-    <p class="fare-highlight">₹{{ ride.fare }}</p>
+    <p class="fare-highlight">₹{{ ride.fare|floatformat:2 }}</p>
+    {% if ride.status != 'PENDING' %}
+    <p>This ride is <strong>{{ ride.get_status_display }}</strong>{% if ride.payment_method %} (paid by {{ ride.get_payment_method_display }}){% endif %}.</p>
+    {% else %}
     <div class="payment-options">
         <h3>Choose Payment Method</h3>
         <form id="payment-form" method="POST">
@@ -133,6 +136,7 @@
             <input type="hidden" name="transaction_id" id="transaction-id-hidden">
         </form>
     </div>
+    {% endif %}
 </div>
 
 <!-- UPI Payment Modal -->
@@ -157,6 +161,7 @@
 <!-- QR Code Generator Library -->
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
+{% if ride.status == 'PENDING' %}
 <script>
     const upiModal = document.getElementById('upi-modal');
     const upiPaymentBtn = document.getElementById('upi-payment-btn');
@@ -172,7 +177,7 @@
         const qrCodeContainer = document.getElementById('qrcode');
         qrCodeContainer.innerHTML = ''; // Clear previous QR code
         
-        const upiString = `upi://pay?pa=joeljustine@ybl&pn=Turbo Cabs&am={{ ride.fare }}&tn=Ride-{{ ride.id }}&cu=INR`;
+        const upiString = `upi://pay?pa=joeljustine@ybl&pn=Turbo Cabs&am={{ ride.fare|floatformat:2 }}&tn=Ride-{{ ride.id }}&cu=INR`;
         
         new QRCode(qrCodeContainer, {
             text: upiString,
@@ -205,4 +210,5 @@
         }
     });
 </script>
+{% endif %}
 {% endblock %}

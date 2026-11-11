@@ -1,0 +1,9 @@
+{% if messages %}
+<div class="flash-messages" style="margin:0 auto 1rem;max-width:600px;">
+  {% for message in messages %}
+  <div role="alert" style="padding:.75rem 1rem;margin-bottom:.5rem;border-radius:6px;font-size:.95rem;color:#fff;background:{% if message.tags == 'error' %}#dc3545{% elif message.tags == 'success' %}#28a745{% elif message.tags == 'warning' %}#e0a800{% else %}#17a2b8{% endif %};">
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}

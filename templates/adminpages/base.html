@@ -16,18 +16,24 @@
   <!-- Sidebar -->
   <div class="sidebar">
     <h2>Turbo Admin</h2>
-    <a href="{% url 'adminpages:dashboard' %}" class="nav-link"><i class='bx bx-home'></i>Dashboard</a>
-    <a href="{% url 'adminpages:rider' %}" class="nav-link"><i class='bx bx-user'></i>Riders</a>
-    <a href="{% url 'adminpages:booking' %}" class="nav-link"><i class='bx bx-car'></i>Bookings</a>
-    <a href="{% url 'adminpages:payment' %}" class="nav-link"><i class='bx bx-wallet'></i>Payments</a>
-    <a href="{% url 'adminpages:report' %}" class="nav-link"><i class='bx bx-bar-chart'></i>Reports</a>
-    <a href="{% url 'adminpages:settings' %}" class="nav-link"><i class='bx bx-cog'></i>Settings</a>
-    <a href="{% url 'adminpages:dashboard' %}" class="logout-btn"><i class='bx bx-log-out'></i> Logout</a>
+    {% with current=request.resolver_match.url_name %}
+    <a href="{% url 'adminpages:home' %}" class="nav-link{% if current == 'home' %} active{% endif %}"><i class='bx bx-grid-alt'></i>Overview</a>
+    <a href="{% url 'adminpages:dashboard' %}" class="nav-link{% if current == 'dashboard' %} active{% endif %}"><i class='bx bx-home'></i>Dashboard</a>
+    <a href="{% url 'adminpages:rider' %}" class="nav-link{% if current == 'rider' or current == 'edit_rider' %} active{% endif %}"><i class='bx bx-user'></i>Riders</a>
+    <a href="{% url 'adminpages:booking' %}" class="nav-link{% if current == 'booking' %} active{% endif %}"><i class='bx bx-car'></i>Bookings</a>
+    <a href="{% url 'adminpages:payment' %}" class="nav-link{% if current == 'payment' %} active{% endif %}"><i class='bx bx-wallet'></i>Payments</a>
+    <a href="{% url 'adminpages:report' %}" class="nav-link{% if current == 'report' %} active{% endif %}"><i class='bx bx-bar-chart'></i>Reports</a>
+    <a href="{% url 'adminpages:settings' %}" class="nav-link{% if current == 'settings' %} active{% endif %}"><i class='bx bx-cog'></i>Settings</a>
+    {% endwith %}
+    <a href="{% url 'account:logout' %}" class="logout-btn"><i class='bx bx-log-out'></i> Logout</a>
 
   </div>
 
-  {% block content %}
-  {% endblock %}
+  <div class="content-area">
+    <div class="messages-wrap">{% include "partials/messages.html" %}</div>
+    {% block content %}
+    {% endblock %}
+  </div>
 
 </body>
 </html>

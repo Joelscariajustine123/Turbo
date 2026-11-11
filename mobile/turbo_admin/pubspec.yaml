@@ -1,0 +1,24 @@
+name: turbo_admin
+description: Turbo Cab admin app — manage rides, riders and drivers.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  turbo_core:
+    path: ../turbo_core
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  shared_preferences: ^2.3.2
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

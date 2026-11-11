@@ -1,0 +1,25 @@
+name: turbo_driver
+description: Turbo Cab driver app — accept rides and track earnings.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  turbo_core:
+    path: ../turbo_core
+  image_picker: ^1.1.2
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  shared_preferences: ^2.3.2
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

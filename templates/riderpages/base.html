@@ -4,21 +4,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Turbo Cab - User Page</title>
+  <title>{% block title %}Ride with Turbo{% endblock %} - Turbo Cab</title>
   <link rel="icon" type="image/png" href="{% static 'riderpages/pages/img/icons8-cab-64.png' %}" />
   <link rel="stylesheet" href="{% static 'riderpages/pages/css/home.css' %}" />
   <link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'riderpages/pages/css/safety.css' %}">
-   <link rel="stylesheet" href="{% static 'riderpages/pages/css/outstation.css' %}">
-   <link rel="stylesheet" href="{% static 'riderpages/pages/css/contact.css' %}">
-   <link rel="stylesheet" href="{% static 'riderpages/pages/css/services.css' %}">
+  <link rel="stylesheet" href="{% static 'riderpages/pages/css/outstation.css' %}">
+  <link rel="stylesheet" href="{% static 'riderpages/pages/css/contact.css' %}">
+  <link rel="stylesheet" href="{% static 'riderpages/pages/css/services.css' %}">
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
 
   <!-- Navigation -->
   <header class="navbar">
-    <img src="{% static 'riderpages/pages/img/logo1.png' %}" class="logo" alt="Turbo Logo" />
+    <img src="{% static 'riderpages/pages/img/logo1.PNG' %}" class="logo" alt="Turbo Logo" />
     <ul>
       <li><a href="{% url 'riderpages:index' %}">Home</a></li>
       <li><a href="{% url 'riderpages:safety' %}">Safety</a></li>
@@ -26,8 +27,16 @@
       <li><a href="{% url 'riderpages:contact' %}">Contact</a></li>
       <li><a href="{% url 'riderpages:services' %}">Services</a></li>
       <li><a href="{% url 'riderpages:map_view' %}">Book Now</a></li>
+      {% if user.is_authenticated %}
+      <li><a href="{% url 'riderpages:my_rides' %}">My Rides</a></li>
+      <li><a href="{% url 'account:logout' %}">Logout</a></li>
+      {% else %}
+      <li><a href="{% url 'account:rider_login' %}">Login</a></li>
+      {% endif %}
     </ul>
   </header>
+
+  {% if messages %}<div style="padding: 1rem 1rem 0;">{% include "partials/messages.html" %}</div>{% endif %}
 
   {% block content %}
   {% endblock %}
@@ -43,7 +52,6 @@
           <li><a href="#">Careers</a></li>
           <li><a href="#">Investors</a></li>
           <li><a href="#">Our offerings</a></li>
-          <li><a href="#">Careers</a></li>
         </ul>
       </div>
       <div class="footer-column">
@@ -59,8 +67,8 @@
       <div class="footer-column">
         <h3>Support</h3>
         <ul>
-          <li><a href="#">Safety</a></li>
-          <li><a href="#">Contact</a></li>
+          <li><a href="{% url 'riderpages:safety' %}">Safety</a></li>
+          <li><a href="{% url 'riderpages:contact' %}">Contact</a></li>
           <li><a href="#">Insurance</a></li>
         </ul>
       </div>
@@ -72,7 +80,6 @@
               <li><a href="#">Cities</a></li>
             </ul>
           </div>
-        </div>
     </div>
     <div class="footer-bottom">
       <div class="social-icons">

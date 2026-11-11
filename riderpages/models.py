@@ -22,6 +22,16 @@ PAYMENT_METHOD_CHOICES = (
     ("UPI", "UPI"),
     ("CASH", "Cash"),
 )
+
+# Fare = BASE_FARE + distance_km * rate. Kept server-side so the price can't be
+# edited in the browser; map.html shows the same numbers for the estimate.
+BASE_FARE = 50
+RATE_PER_KM = {
+    "sedan": 15,
+    "suv": 20,
+    "bike": 8,
+    "auto": 12,
+}
 class Ride(models.Model):
     # Rider-related fields
     user = models.ForeignKey(
@@ -31,6 +41,11 @@ class Ride(models.Model):
     )
     pickup_location = models.CharField(max_length=255)
     drop_location = models.CharField(max_length=255)
+    # Coordinates let the server work out the distance itself (see pricing.py).
+    pickup_lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    pickup_lng = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    drop_lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    drop_lng = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     car_type = models.CharField(max_length=10, choices=CAR_CHOICES)
     distance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     fare = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -51,9 +66,13 @@ class Ride(models.Model):
         blank=True
     )
     # Status and Timestamps
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
-    created_at = models.DateTimeField(auto_now_add=True)
-    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
     def __str__(self):
         return f"Ride from {self.pickup_location} for {self.user.full_name}"
 
@@ -62,6 +81,9 @@ class ContactMessage(models.Model):
     email = models.EmailField()
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"Message from {self.name} ({self.email})"

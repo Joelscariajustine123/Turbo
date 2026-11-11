@@ -27,6 +27,19 @@ class Earning(models.Model):
     def __str__(self):
         return f"{self.driver.user.full_name} - ₹{self.amount} on {self.date}"
 
+class RideDecline(models.Model):
+    """A driver said no to a ride: hide it from that driver only (others can still accept it)."""
+    driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='declined')
+    ride = models.ForeignKey('riderpages.Ride', on_delete=models.CASCADE, related_name='declines')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['driver', 'ride'], name='unique_driver_ride_decline')]
+
+    def __str__(self):
+        return f"{self.driver} declined ride {self.ride_id}"
+
+
 class Rating(models.Model):
     driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='ratings')
     # Link to the Ride model using a string to avoid circular imports

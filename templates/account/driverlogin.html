@@ -13,8 +13,10 @@
   <div class="login-page">
     <div class="login-card">
       <h2 class="title">Log in</h2>
+      {% include "partials/messages.html" %}
       <form action="" method="post" class="login-form">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}" />
         <div class="input-group">
           <label>Email address</label>
           <div class="input-box">
@@ -33,7 +35,7 @@
         </div>
 
         <div class="options">
-          <label><input type="checkbox" /> Remember password</label>
+          <label><input type="checkbox" name="remember" /> Remember me</label>
         </div>
 
         <button type="submit" class="sign-in-btn">Sign In</button>
@@ -44,7 +46,7 @@
 
         <div class="divider"><span>Or</span></div>
 
-        <button class="google-btn">
+        <button type="button" class="google-btn" disabled title="Google sign-in is not available yet">
           <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_2013_Google.png" alt="Google" />
           Log in with Google
         </button>

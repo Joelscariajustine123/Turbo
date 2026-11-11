@@ -1,75 +1,99 @@
-# riderpages/views.py
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from .models import Ride, ContactMessage
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from account.decorators import role_required
+
+from . import services
+from .models import BASE_FARE, RATE_PER_KM, Ride
+
+rider_required = role_required('rider')
+
 
 def index(request):
     return render(request, 'riderpages/index.html')
 
+
 def safety(request):
     return render(request, 'riderpages/Safety.html')
+
 
 def outstation(request):
     return render(request, 'riderpages/outstation.html')
 
-def services(request):
+
+def services_page(request):
     return render(request, 'riderpages/services.html')
+
 
 def contact(request):
     if request.method == 'POST':
-        name = request.POST.get('name')
-        email = request.POST.get('email')
-        message_body = request.POST.get('message')
-        ContactMessage.objects.create(name=name, email=email, message=message_body)
+        try:
+            services.save_contact_message(request.POST.get('name'), request.POST.get('email'), request.POST.get('message'))
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+            return render(request, 'riderpages/contact.html', {'form_data': request.POST})
         messages.success(request, 'Your message has been sent successfully!')
         return redirect('riderpages:contact')
     return render(request, 'riderpages/contact.html')
 
-@login_required
-def map_view(request):
-    # This view now handles both displaying the map and creating the ride
-    if request.method == 'POST':
-        # Create a ride instance but don't finalize it yet
-        ride = Ride.objects.create(
-            user=request.user,
-            pickup_location=request.POST.get('pickup'),
-            drop_location=request.POST.get('drop'),
-            car_type=request.POST.get('car'),
-            distance=request.POST.get('distance'),
-            fare=request.POST.get('fare'),
-            status='PENDING' # The ride is pending until payment
-        )
-        # Redirect to the new confirmation page with the ride's ID
-        return redirect('riderpages:booking_confirmation', ride_id=ride.id)
 
-    # For GET requests, just show the map page
-    return render(request, 'riderpages/map.html')
-@login_required
+@rider_required
+def map_view(request):
+    if request.method == 'POST':
+        p = request.POST
+        try:
+            ride = services.create_ride(
+                request.user,
+                pickup=p.get('pickup'), drop=p.get('drop'), car_type=p.get('car', ''),
+                pickup_lat=p.get('pickup_lat'), pickup_lng=p.get('pickup_lng'),
+                drop_lat=p.get('drop_lat'), drop_lng=p.get('drop_lng'),
+            )
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+        else:
+            return redirect('riderpages:booking_confirmation', ride_id=ride.id)
+
+    return render(request, 'riderpages/map.html', {'base_fare': BASE_FARE, 'rates': RATE_PER_KM})
+
+
+@rider_required
 def booking_confirmation(request, ride_id):
     ride = get_object_or_404(Ride, id=ride_id, user=request.user)
 
     if request.method == 'POST':
-        payment_method = request.POST.get('payment_method')
-        transaction_id = request.POST.get('transaction_id') # Get the transaction ID
-
-        # --- FIX: Save the payment details to the ride object ---
-        if payment_method:
-            ride.payment_method = payment_method.upper() # e.g., 'CASH' or 'UPI'
-            ride.status = 'CONFIRMED'
-            
-            # Save the transaction ID only if the method is UPI
-            if payment_method == 'upi' and transaction_id:
-                ride.transaction_id = transaction_id
-
-            ride.save() # Save all the changes
-            
-            messages.success(request, f"Your ride has been confirmed! Payment method: {payment_method.title()}. A driver will be assigned shortly.")
-            return redirect('riderpages:index')
+        try:
+            services.confirm_payment(ride, request.POST.get('payment_method'), request.POST.get('transaction_id'))
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+            if ride.status != 'PENDING':
+                return redirect('riderpages:my_rides')
         else:
-            # Handle case where payment method is not provided
-            messages.error(request, 'Please select a payment method.')
+            messages.success(
+                request,
+                f"Your ride has been confirmed! Payment method: {ride.get_payment_method_display()}. "
+                "A driver will be assigned shortly.",
+            )
+            return redirect('riderpages:my_rides')
 
-    context = {'ride': ride}
-    return render(request, 'riderpages/booking_confirmation.html', context)
+    return render(request, 'riderpages/booking_confirmation.html', {'ride': ride})
+
+
+@rider_required
+def my_rides(request):
+    rides = Ride.objects.select_related('driver__user').filter(user=request.user)
+    return render(request, 'riderpages/my_rides.html', {'rides': rides})
+
+
+@rider_required
+@require_POST
+def cancel_ride(request, ride_id):
+    ride = get_object_or_404(Ride, id=ride_id, user=request.user)
+    try:
+        services.cancel_ride(ride)
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0])
+    else:
+        messages.info(request, "Your ride has been cancelled.")
+    return redirect('riderpages:my_rides')

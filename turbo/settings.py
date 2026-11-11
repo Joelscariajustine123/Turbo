@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -21,12 +22,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ls3-1wdv61frg2f4=fo99bnw*n_o*7gfu-%t)l9!#$$0(hf0=@'
+# Set DJANGO_SECRET_KEY / DJANGO_DEBUG / DJANGO_ALLOWED_HOSTS in the environment for
+# production; the fallbacks below are for local development only.
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-ls3-1wdv61frg2f4=fo99bnw*n_o*7gfu-%t)l9!#$$0(hf0=@',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2').split(',') if h.strip()]
 
 
 # Application definition
@@ -38,14 +44,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
+    'corsheaders',
     'account',
     'adminpages',
     'driverpages',
     'riderpages',
+    'api',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -59,7 +70,7 @@ ROOT_URLCONF = 'turbo.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR,'templates')],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -80,7 +91,7 @@ WSGI_APPLICATION = 'turbo.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.environ.get('DJANGO_DB_PATH', BASE_DIR / 'db.sqlite3'),
     }
 }
 
@@ -120,14 +131,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # target for `collectstatic` in production
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-    
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -135,9 +144,52 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'account.CustomUser'
 AUTHENTICATION_BACKENDS = [
-    'account.auth_backend.EmailBackend',  # your custom backend
+    'account.auth_backend.EmailBackend',  # log in with email + password
 ]
 
+# Role-specific pages use account.decorators.role_required, which sends users
+# to the right login page. This is only the fallback for plain @login_required.
+LOGIN_URL = 'account:usertype'
 
 
-LOGIN_URL = '/adminlogin/'
+# ---------------------------------------------------------------------------
+# REST API (used by the React frontend and the Flutter apps)
+# ---------------------------------------------------------------------------
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'EXCEPTION_HANDLER': 'api.exceptions.exception_handler',
+    'DEFAULT_THROTTLE_RATES': {'auth': '20/min'},
+    'COERCE_DECIMAL_TO_STRING': False,  # send prices as JSON numbers
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+}
+
+# Browser origins allowed to call the API (the React dev server by default).
+# Mobile apps are not browsers, so CORS does not apply to them.
+CORS_ALLOWED_ORIGINS = [o.strip() for o in os.environ.get(
+    'DJANGO_CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',') if o.strip()]
+CORS_URLS_REGEX = r'^/(api|media)/.*$'
+
+# Road-distance routing server for fares (OSRM). Set TURBO_ROUTING_URL to '' to
+# always use the straight-line estimate instead.
+ROUTING_URL = os.environ.get('TURBO_ROUTING_URL', 'https://router.project-osrm.org')
+ROUTING_TIMEOUT = 5
+
+# UPI ID shown to riders for payment
+UPI_ID = os.environ.get('TURBO_UPI_ID', 'joeljustine@ybl')
+
+# Tests never call the external routing server.
+import sys  # noqa: E402
+if 'test' in sys.argv:
+    ROUTING_URL = ''

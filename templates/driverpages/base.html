@@ -4,40 +4,38 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Earnings - Turbo Cab</title>
+  <title>{% block title %}Driver{% endblock %} - Turbo Cab</title>
   <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'driverpages/css/earning.css' %}">
   <link rel="stylesheet" href="{% static 'driverpages/css/homepage.css' %}">
   <link rel="stylesheet" href="{% static 'driverpages/css/profile.css' %}">
   <link rel="stylesheet" href="{% static 'driverpages/css/settings.css' %}">
-  
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
   <div class="container">
+    {% with current=request.resolver_match.url_name %}
     <header class="header">
       <div class="logo">
         <h1>Turbo Cab</h1>
       </div>
-      <div class="nav">
-        <a href="{% url 'driverpages:homepage' %}">Dashboard</a>
-        <a href="{% url 'driverpages:earnings' %}" class="active">Earnings</a>
-        <!-- <a href="{% url 'driverpages:profile' %}">Profile</a> -->
-        <a href="{% url 'driverpages:edit_profile' %}">Settings</a>
-        <a href="{% url 'account:driver_login' %}">Logout</a> 
-      </div>
-      
+      <nav class="nav">
+        <a href="{% url 'driverpages:homepage' %}"{% if current == 'homepage' %} class="active"{% endif %}>Dashboard</a>
+        <a href="{% url 'driverpages:earnings' %}"{% if current == 'earnings' %} class="active"{% endif %}>Earnings</a>
+        <a href="{% url 'driverpages:edit_profile' %}"{% if current == 'edit_profile' %} class="active"{% endif %}>Settings</a>
+        <a href="{% url 'account:logout' %}">Logout</a>
+      </nav>
     </header>
+    {% endwith %}
+
+    {% include "partials/messages.html" %}
+
     {% block content %}
     {% endblock content %}
-
-    <script src="{% static 'driverpages/js/scripts.js' %}"></script>
-
-    </section>
   </div>
-</div>
+
+  <script src="{% static 'driverpages/js/scripts.js' %}"></script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

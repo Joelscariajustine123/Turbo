@@ -1,0 +1,28 @@
+name: turbo_rider
+description: Turbo Cab rider app — book rides, pay and track trips.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  turbo_core:
+    path: ../turbo_core
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geolocator: ^13.0.1
+  http: ^1.2.2
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  shared_preferences: ^2.3.2
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

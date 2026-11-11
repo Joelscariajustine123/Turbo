@@ -1,5 +1,5 @@
 {% extends 'driverpages/base.html' %}
-{% load static %}
+{% block title %}Settings{% endblock %}
 {% block content %}
 <main class="content">
   <section class="settings">
@@ -17,7 +17,7 @@
       <!-- Phone -->
       <div class="form-group">
         <label for="phone">Phone Number</label>
-        <input type="tel" id="phone" name="phone" value="{{ driver.user.phone }}" required>
+        <input type="tel" id="phone" name="phone" value="{{ driver.user.phone }}" pattern="[0-9]{10}" maxlength="10" title="10-digit phone number" required>
       </div>
 
       <!-- Email -->
@@ -42,9 +42,9 @@
       <div class="form-group">
         <label for="availability_status">Availability Status</label>
         <select id="availability_status" name="availability_status">
-          <option value="available" {% if driver.availability_status == 'available' %}selected{% endif %}>Available</option>
-          <option value="offline" {% if driver.availability_status == 'offline' %}selected{% endif %}>Offline</option>
-          <option value="on-trip" {% if driver.availability_status == 'on-trip' %}selected{% endif %}>On a Trip</option>
+          {% for value, label in availability_choices %}
+          <option value="{{ value }}"{% if driver.availability_status == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
         </select>
       </div>
 
@@ -52,6 +52,9 @@
       <div class="form-group">
         <label for="profile_photo">Upload Photo</label>
         <input type="file" id="profile_photo" name="profile_photo" accept="image/*">
+        {% if driver.profile_photo %}
+          <img src="{{ driver.profile_photo.url }}" alt="Current profile photo" width="100" height="100" style="margin-top: 10px; object-fit: cover; border-radius: 8px;">
+        {% endif %}
       </div>
 
       <div class="form-group">

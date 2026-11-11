@@ -8,24 +8,17 @@
       
       <div class="form-group">
         <label for="admin-name">Name</label>
-        <input type="text" id="admin-name" name="name" value="Admin User" />
+        <input type="text" id="admin-name" name="name" value="{{ user.full_name }}" required />
       </div>
 
       <div class="form-group">
         <label for="admin-email">Email</label>
-        <input type="email" id="admin-email" name="email" value="admin@turbo.com" />
+        <input type="email" id="admin-email" name="email" value="{{ user.email }}" required />
       </div>
 
       <div class="form-group">
         <label for="admin-password">Change Password</label>
-        <input type="password" id="admin-password" name="password" placeholder="Enter new password" />
-      </div>
-
-      <div class="form-group">
-        <label>
-          <input type="checkbox" name="notifications" checked />
-          Enable Notifications
-        </label>
+        <input type="password" id="admin-password" name="password" placeholder="Leave blank to keep current password" autocomplete="new-password" />
       </div>
 
       <div class="edit-form-actions">

@@ -1,14 +1,9 @@
 {% extends 'riderpages/base.html' %}
 {% load static %}
 
-{% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Turbo Cab - Book a Ride</title>
+{% block title %}Book a Ride{% endblock %}
 
+{% block extra_head %}
     <!-- Leaflet Map & Plugin CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
@@ -186,12 +181,13 @@
         }
 
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <div class="app-container">
         
         <div class="sidebar">
-            <form method="POST" action="{% url 'riderpages:map_view' %}">
+            <form method="POST" action="{% url 'riderpages:map_view' %}" id="booking-form">
                 {% csrf_token %}
                 <h2>BOOK YOUR RIDE</h2>
                 
@@ -216,13 +212,18 @@
                 <!-- NEW: Hidden inputs to send distance and fare to the server -->
                 <input type="hidden" name="distance" id="hidden-distance" />
                 <input type="hidden" name="fare" id="hidden-fare" />
+                <!-- The server recalculates distance and fare from these coordinates. -->
+                <input type="hidden" name="pickup_lat" id="pickup-lat" />
+                <input type="hidden" name="pickup_lng" id="pickup-lng" />
+                <input type="hidden" name="drop_lat" id="drop-lat" />
+                <input type="hidden" name="drop_lng" id="drop-lng" />
 
                 <label>Select Vehicle</label>
                 <select id="car" name="car">
-                    <option value="sedan" data-rate="15">🚘 Sedan (₹15/km)</option>
-                    <option value="suv" data-rate="20">🚙 SUV (₹20/km)</option>
-                    <option value="bike" data-rate="8">🏍️ Bike (₹8/km)</option>
-                    <option value="auto" data-rate="12">🛺 Auto (₹12/km)</option>
+                    <option value="sedan" data-rate="{{ rates.sedan }}">🚘 Sedan (₹{{ rates.sedan }}/km)</option>
+                    <option value="suv" data-rate="{{ rates.suv }}">🚙 SUV (₹{{ rates.suv }}/km)</option>
+                    <option value="bike" data-rate="{{ rates.bike }}">🏍️ Bike (₹{{ rates.bike }}/km)</option>
+                    <option value="auto" data-rate="{{ rates.auto }}">🛺 Auto (₹{{ rates.auto }}/km)</option>
                 </select>
 
                 <button type="submit" id="book-btn">CONFIRM BOOKING</button>
@@ -257,6 +258,7 @@
         let pickupMarker = null;
         let dropMarker = null;
         let geocodeTimeout;
+        let lastDistanceMeters = null;
 
         map.locate({ setView: true, maxZoom: 16 });
 
@@ -329,9 +331,15 @@
                 dropMarker = L.marker(dropLatLng, { draggable: true }).addTo(map);
                 dropMarker.on('dragend', (e) => handleDropMarkerDrag(e));
             }
-            map.fitBounds([pickupLatLng, dropLatLng], { padding: [50, 50] });
+            if (pickupLatLng) map.fitBounds([pickupLatLng, dropLatLng], { padding: [50, 50] });
+            else map.setView(dropLatLng, 14);
             calculateAndShowRoute();
         }
+
+        // Enter in the search box should search, not submit the booking form.
+        dropInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') e.preventDefault();
+        });
 
         dropInput.addEventListener('keyup', function(e) {
             if (e.key === 'Enter') {
@@ -381,20 +389,27 @@
         function calculateAndShowRoute() {
             if (!pickupLatLng || !dropLatLng) return;
             if (routingControl) map.removeControl(routingControl);
+            // Clear the old estimate until the new route comes back.
+            lastDistanceMeters = null;
+            hiddenDistanceInput.value = '';
+            hiddenFareInput.value = '';
             routingControl = L.Routing.control({
                 waypoints: [pickupLatLng, dropLatLng],
                 lineOptions: { styles: [{ color: '#007bff', opacity: 0.8, weight: 6 }] },
                 createMarker: () => null, show: false, addWaypoints: false
             }).addTo(map);
-            routingControl.on('routesfound', (e) => updateFare(e.routes[0].summary.totalDistance));
+            routingControl.on('routesfound', (e) => {
+                lastDistanceMeters = e.routes[0].summary.totalDistance;
+                updateFare(lastDistanceMeters);
+            });
         }
         
         function updateFare(distanceMeters) {
             const distanceKm = (distanceMeters / 1000).toFixed(2);
             const selectedCarOption = carSelect.options[carSelect.selectedIndex];
             const ratePerKm = parseFloat(selectedCarOption.getAttribute('data-rate'));
-            const baseFare = 50;
-            const estimatedFare = (distanceKm * ratePerKm) + baseFare;
+            const baseFare = {{ base_fare }};
+            const estimatedFare = (parseFloat(distanceKm) * ratePerKm) + baseFare;
             
             distanceEl.textContent = distanceKm;
             fareEl.textContent = estimatedFare.toFixed(2);
@@ -405,11 +420,20 @@
         }
 
         carSelect.addEventListener('change', function() {
-            if (routingControl && routingControl._routes && routingControl._routes.length > 0) {
-                updateFare(routingControl._routes[0].summary.totalDistance);
+            if (lastDistanceMeters !== null) updateFare(lastDistanceMeters);
+        });
+
+        // Don't submit until a route (and therefore a distance) exists.
+        document.getElementById('booking-form').addEventListener('submit', function(e) {
+            if (!pickupLatLng || !dropLatLng || !hiddenDistanceInput.value) {
+                e.preventDefault();
+                alert('Please allow location access and choose a drop location, then wait for the fare to appear.');
+                return;
             }
+            document.getElementById('pickup-lat').value = pickupLatLng.lat;
+            document.getElementById('pickup-lng').value = pickupLatLng.lng;
+            document.getElementById('drop-lat').value = dropLatLng.lat;
+            document.getElementById('drop-lng').value = dropLatLng.lng;
         });
     </script>
-</body>
-</html>
 {% endblock %}
