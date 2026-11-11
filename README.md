@@ -11,6 +11,20 @@ Ride-booking system with three kinds of users: **riders**, **drivers** and **adm
 
 Business rules live in one place, the `services.py` module in each app, so the website, the API, React and Flutter all behave the same.
 
+### Live on Render
+
+**https://turbo-u967.onrender.com** (free plan: the first visit after 15 idle minutes takes about a minute to wake up)
+
+| Page | Link |
+|---|---|
+| Choose rider / driver / admin | https://turbo-u967.onrender.com/ |
+| Rider website | https://turbo-u967.onrender.com/riderpages/ |
+| React web app | https://turbo-u967.onrender.com/app/ |
+| REST API | https://turbo-u967.onrender.com/api/meta/ |
+| Django admin | https://turbo-u967.onrender.com/admin/ |
+
+How it is hosted and how to redeploy: see [5. Hosting on Render](#5-hosting-on-render).
+
 ---
 
 ## 1. Backend (Django)
@@ -19,7 +33,7 @@ Business rules live in one place, the `services.py` module in each app, so the w
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver 0.0.0.0:8000     # 0.0.0.0 so phones on your Wi-Fi can reach it
-python manage.py test                        # 48 tests
+python manage.py test                        # 106 tests
 ```
 
 * Website: http://localhost:8000/
@@ -51,8 +65,8 @@ python manage.py test                        # 48 tests
 | `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | — | Gmail address + app password for verification codes |
 | `DEFAULT_FROM_EMAIL` | `Turbo Cab <EMAIL_HOST_USER>` | Sender shown in the emails |
 | `TURBO_EMAIL_OTP` | `auto` | `on` / `off` / `auto` (on when email is configured) |
-| `GOOGLE_OAUTH_CLIENT_ID` | — | OAuth Web client ID for "Continue with Google" (button hidden when empty) |
 | `GOOGLE_SITE_VERIFICATION` | — | Google Search Console ownership token (meta tag on the homepage) |
+| `GOOGLE_SITE_VERIFICATION_FILES` | `google696da265b08989c0.html` | Search Console HTML verification file names served at `/` (comma-separated) |
 
 ### How fares work
 The client sends pickup/drop **coordinates**; the server works out the distance (OSRM road route, or straight line × 1.3 if OSRM is unreachable, with a 5-minute back-off) and the fare: `₹50 + km × rate` (Sedan 15, SUV 20, Bike 8, Auto 12, set in `riderpages/models.py`). Clients cannot set the price.
@@ -165,7 +179,41 @@ Everything runs as **one Docker web service** (website + API + React app at `/ap
 
 Each `git push` to `main` redeploys automatically. Migrations run on every start.
 
-**Mobile apps against Render:** `flutter run --dart-define=API_URL=https://<service-name>.onrender.com` (or `flutter build apk --dart-define=…`).
+### The live deployment
+
+| | |
+|---|---|
+| Site | https://turbo-u967.onrender.com |
+| Web service | `turbo` (Docker, free plan), health check `/api/meta/` |
+| Database | `turbo-db` (Render Postgres, free plan) |
+| Deploys | automatic on every push to `main` of the GitHub repo |
+
+**What happens on each deploy** (see [`Dockerfile`](Dockerfile)):
+1. Node builds the React app into `frontend/dist/app`.
+2. Python installs `requirements.txt` and runs `collectstatic` (WhiteNoise serves the files).
+3. On start: `migrate` → `ensure_admin` (creates the `TURBO_ADMIN_*` admin if it doesn't exist) → `purge_location_history` → `gunicorn`.
+
+**Environment variables** (Render → **turbo → Environment**; change one, then **Save, rebuild and deploy**):
+
+| Variable | Set by | Notes |
+|---|---|---|
+| `DATABASE_URL` | Blueprint | Linked to `turbo-db` |
+| `DJANGO_SECRET_KEY` | Blueprint | Generated once; don't change it (logins and ride OTPs depend on it) |
+| `DJANGO_DEBUG` | Blueprint | `False` |
+| `WEB_CONCURRENCY` | Blueprint | gunicorn workers (`2`) |
+| `TURBO_ADMIN_EMAIL` / `TURBO_ADMIN_PASSWORD` | you | First admin. Add `TURBO_ADMIN_RESET=1` once to reset that admin's password to this value |
+| `TURBO_UPI_ID` | Blueprint | UPI ID riders pay to |
+| `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | optional | Gmail for login/sign-up codes (needs a paid instance, see section 7) |
+| `GOOGLE_MAPS_API_KEY` | optional | Google Maps instead of OpenStreetMap (section 6) |
+| `GOOGLE_SITE_VERIFICATION` | optional | Search Console meta-tag token (section 10) |
+
+`RENDER_EXTERNAL_HOSTNAME` is provided by Render and added to `ALLOWED_HOSTS` automatically, so no host setting is needed for the `onrender.com` address. A custom domain must be added to `DJANGO_ALLOWED_HOSTS`.
+
+**Admin login on Render:** `python manage.py createsuperuser` on your PC only changes your **local** database. The live admin is the `TURBO_ADMIN_EMAIL` account; to fix its password, set `TURBO_ADMIN_PASSWORD` plus `TURBO_ADMIN_RESET=1`, deploy, then remove `TURBO_ADMIN_RESET`.
+
+**Logs and problems:** Render → **turbo → Logs** shows the deploy and request logs. If a deploy fails, the build log shows the failing step; the previous version keeps running until a new one is healthy.
+
+**Mobile apps against Render:** `flutter build apk --dart-define=API_URL=https://turbo-u967.onrender.com` (or `flutter run --dart-define=…`).
 
 **Free plan limits**
 * The web service sleeps after 15 min without traffic; the next request takes about a minute to wake it.
@@ -244,25 +292,9 @@ Locally (`DEBUG=True`, no email settings) the codes are printed in the `runserve
 
 ---
 
-## 9. Sign in with Google
+## 9. Sign in with Google (removed from the pages)
 
-A **Continue with Google** button is shown on the login and sign-up pages (website and React) once `GOOGLE_OAUTH_CLIENT_ID` is set.
-
-* The browser gets a signed ID token from Google. The server verifies the signature (Google's public keys), that it was issued for **your** client ID, the issuer, the expiry and that Google verified the email.
-* Then it logs in the matching account (found by Google ID or by email, and linked), or creates a new **rider/driver** account. Admin accounts are never created this way, but existing admins can use Google to log in.
-* No emailed code is needed, because Google has already confirmed the email. A Google account registered as a driver can't log in on the rider page (and vice versa).
-* Accounts created with Google have no password; they keep using Google.
-
-### Google Cloud setup (free)
-1. Go to [console.cloud.google.com](https://console.cloud.google.com/) and create (or pick) a project.
-2. **APIs & Services → OAuth consent screen**: choose *External*, set the app name "Turbo Cab", a support email and the developer email, then save. Under *Audience*, click **Publish app** so everyone can sign in, not just test users. The basic scopes (email, profile) need no Google review.
-3. **APIs & Services → Credentials → Create credentials → OAuth client ID → Web application**.
-   * **Authorized JavaScript origins:** `https://turbo-u967.onrender.com`, plus `http://localhost:8000` and `http://localhost:5173` for local testing.
-   * No redirect URI is needed.
-4. Copy the **Client ID** (`…apps.googleusercontent.com`). The client secret isn't used.
-5. In Render, open **turbo → Environment**, add `GOOGLE_OAUTH_CLIENT_ID` = that ID, then **Save, rebuild and deploy**.
-
-Google sign-in works on Render's free plan (it doesn't send email). The mobile apps still use email + password; adding Google there needs an Android OAuth client with your app's signing SHA-1.
+The login and sign-up pages (website and React) offer **email + password** with the emailed code only. The "Continue with Google" button was taken off every page; a test (`test_no_google_button_on_any_auth_page`) keeps it that way. The server-side endpoints (`/google-login/`, `/api/auth/google/`) still exist but no page uses them.
 
 ---
 
@@ -271,9 +303,9 @@ Google sign-in works on Render's free plan (it doesn't send email). The mobile a
 That's a Google Safe Browsing flag on the address, not an error in the app. New sites on shared hosts like `onrender.com` are often flagged, especially pages with password forms. Only the site owner can ask Google to review it:
 
 1. Go to [search.google.com/search-console](https://search.google.com/search-console), click **Add property → URL prefix**, and enter `https://turbo-u967.onrender.com/`.
-2. Choose the **HTML tag** method and copy only the `content="…"` value.
-3. In Render, open **turbo → Environment**, add `GOOGLE_SITE_VERIFICATION` = that value, then **Save, rebuild and deploy**. Back in Search Console, click **Verify**.
-4. Open **Security & Manual Actions → Security issues**, read which pages are listed, then click **Request review**. Explain: *"Turbo Cab is a ride-booking project. The login pages are our own (rider/driver/admin). We removed a placeholder Google logo button and a template's example email, and added our branding, privacy policy and terms."*
+2. Choose the **HTML file** method and click **Verify**. The file is already served: https://turbo-u967.onrender.com/google696da265b08989c0.html. (If Google gives you a different file name, add it to `GOOGLE_SITE_VERIFICATION_FILES` in Render. Or use the **HTML tag** method: put the `content="…"` value in `GOOGLE_SITE_VERIFICATION`.)
+3. Keep the verification file in place; Google re-checks it from time to time.
+4. Open **Security & Manual Actions → Security issues**, read which pages are listed, then click **Request review**. Explain: *"Turbo Cab is a ride-booking project. The login pages are our own (rider/driver/admin) and don't imitate any other service. We removed a Google-logo login button and a template's example email (test@saberali.co), and added our branding, privacy policy and terms."*
 5. Reviews usually take from a day to a few days. Afterwards the warning disappears for everyone.
 
 A custom domain (for example `turbocab.in`, added under Render → turbo → Settings → Custom Domains) avoids sharing reputation with other `onrender.com` sites.
