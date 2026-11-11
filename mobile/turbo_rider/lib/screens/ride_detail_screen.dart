@@ -143,7 +143,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
       builder: (_) => _TransactionDialog(upiId: meta.upiId, amount: ride.fare, openedApp: opened),
     );
     if (txn != null && txn.trim().isNotEmpty) {
-      await _action('pay', {'payment_method': 'upi', 'transaction_id': txn.trim()}, 'Payment recorded. Finding you a driver…');
+      await _action('pay', {'payment_method': 'upi', 'transaction_id': txn.trim()}, 'Payment received — thank you!');
     }
   }
 
@@ -227,8 +227,20 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                           : null,
                     ),
                   ),
-                if (ride.status == 'PENDING') ...[
-                  const Text('Choose how to pay', style: TextStyle(fontWeight: FontWeight.w600)),
+                if (ride.status == 'COMPLETED' && ride.paymentStatus == 'CASH_DUE')
+                  Card(child: ListTile(
+                    leading: const Icon(Icons.payments_outlined),
+                    title: Text('Please pay ${money(ride.fare)} to your driver in cash.'),
+                    subtitle: const Text("They'll confirm once they've received it."),
+                  )),
+                if (ride.status == 'COMPLETED' && ride.paymentStatus == 'PAID')
+                  Card(child: ListTile(
+                    leading: const Icon(Icons.check_circle, color: Colors.green),
+                    title: Text('Paid${ride.paymentMethodDisplay != null ? ' by ${ride.paymentMethodDisplay}' : ''} — thank you!'),
+                  )),
+                if (ride.status == 'PENDING' || ride.needsPayment) ...[
+                  Text(ride.status == 'COMPLETED' ? 'Your ride is complete. How would you like to pay?' : 'Choose how to pay',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   Row(children: [
                     Expanded(
@@ -241,7 +253,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: _busy ? null : () => _action('pay', {'payment_method': 'cash'}, 'Ride confirmed. Pay the driver in cash.'),
+                        onPressed: _busy ? null : () => _action('pay', {'payment_method': 'cash'}, 'Please pay the driver in cash.'),
                         icon: const Icon(Icons.payments_outlined),
                         label: const Text('Pay cash'),
                       ),

@@ -32,7 +32,8 @@ class RiderPagesTests(TestCase):
             'pickup': 'A', 'drop': 'B', 'car': 'sedan', 'distance': '1', 'fare': '1', **COORDS,
         })
         ride = Ride.objects.get()
-        self.assertRedirects(resp, reverse('riderpages:booking_confirmation', args=[ride.id]))
+        self.assertRedirects(resp, reverse('riderpages:track_ride', args=[ride.id]))
+        self.assertEqual(ride.status, 'CONFIRMED')  # sent to drivers; paid after the ride
         route = get_route(11.8745, 75.3704, 11.95, 75.42)
         self.assertEqual(ride.distance, route.distance_km)  # posted distance of 1 is ignored
         self.assertEqual(ride.fare, calculate_fare('sedan', route.distance_km))

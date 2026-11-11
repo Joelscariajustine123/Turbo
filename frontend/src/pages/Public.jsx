@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { homeFor, useAuth } from '../auth/AuthContext';
@@ -36,26 +36,66 @@ export function Landing() {
   );
 }
 
+/** "Check your email" step shared by login and registration. */
+function EmailCode({ pending, onDone, onBack }) {
+  const { verifyEmail, resendCode } = useAuth();
+  const [code, setCode] = useState('');
+  const [info, setInfo] = useState('');
+  const [wait, setWait] = useState(60);
+  const { busy, error, run } = useAction();
+  useEffect(() => {
+    if (wait <= 0) return undefined;
+    const t = setTimeout(() => setWait((w) => w - 1), 1000);
+    return () => clearTimeout(t);
+  }, [wait]);
+  const submit = (e) => {
+    e?.preventDefault();
+    run(async () => onDone(await verifyEmail(pending.challenge, code)));
+  };
+  return (
+    <form className="card auth-card" onSubmit={submit}>
+      <h2>{pending.purpose === 'register' ? 'Verify your email' : 'Check your email'}</h2>
+      <p className="muted">We sent a 6-digit code to <strong>{pending.email}</strong>. It expires in 10 minutes.</p>
+      <Alert>{error}</Alert>
+      <Alert kind="success">{info}</Alert>
+      <input className="otp-input" inputMode="numeric" autoComplete="one-time-code" maxLength={6} autoFocus required
+        aria-label="6-digit code" placeholder="••••••" value={code}
+        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+      <button className="btn primary block" disabled={busy || code.length !== 6}>{busy ? 'Checking…' : 'Verify'}</button>
+      <button type="button" className="btn ghost block" disabled={wait > 0 || busy}
+        onClick={() => run(async () => { const r = await resendCode(pending.challenge); setInfo(r.detail); setWait(60); })}>
+        {wait > 0 ? `Resend code in ${wait}s` : 'Resend code'}
+      </button>
+      <p className="center"><button type="button" className="btn ghost small" onClick={onBack}>← Back</button></p>
+    </form>
+  );
+}
+
 export function Login() {
   const { role } = useParams();
   const { user, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [form, setForm] = useState({ email: '', password: '' });
+  const [pending, setPending] = useState(null);
   const { busy, error, run } = useAction();
 
   if (!ROLES[role]) return <Navigate to="/" replace />;
   if (user) return <Navigate to={homeFor(user.role)} replace />;
 
+  const go = (u) => navigate(location.state?.from?.startsWith(homeFor(u.role)) ? location.state.from : homeFor(u.role),
+    { replace: true });
   const submit = (e) => {
     e.preventDefault();
     run(async () => {
-      const u = await login(form.email.trim(), form.password, role);
-      navigate(location.state?.from?.startsWith(homeFor(u.role)) ? location.state.from : homeFor(u.role), {
-        replace: true,
-      });
+      const r = await login(form.email.trim(), form.password, role);
+      if (r.pending) setPending(r.pending); else go(r.user);
     });
   };
+
+  if (pending) {
+    return <div className="center-page"><EmailCode pending={pending} onDone={go} onBack={() => setPending(null)} /></div>;
+  }
 
   return (
     <div className="center-page">
@@ -97,6 +137,7 @@ export function Register() {
   const { user, register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ full_name: '', username: '', email: '', phone: '', password: '', password2: '' });
+  const [pending, setPending] = useState(null);
   const { busy, error, setError, run } = useAction();
 
   if (role !== 'rider' && role !== 'driver') return <Navigate to="/" replace />;
@@ -111,10 +152,15 @@ export function Register() {
     }
     const { password2, ...body } = form;
     run(async () => {
-      const u = await register({ ...body, role });
-      navigate(role === 'driver' ? '/driver/profile' : homeFor(u.role), { replace: true });
+      const r = await register({ ...body, role });
+      if (r.pending) setPending(r.pending); else done(r.user);
     });
   };
+  function done(u) { navigate(role === 'driver' ? '/driver/profile' : homeFor(u.role), { replace: true }); }
+
+  if (pending) {
+    return <div className="center-page"><EmailCode pending={pending} onDone={done} onBack={() => setPending(null)} /></div>;
+  }
 
   return (
     <div className="center-page">

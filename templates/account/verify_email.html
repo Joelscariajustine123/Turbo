@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Check your email · Turbo Cab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'account/css/riderlogin.css' %}" />
+  <style>
+    .verify-icon { width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 50%; display: grid; place-items: center;
+      background: rgba(59,130,246,.15); color: #60a5fa; font-size: 32px; }
+    .verify-sub { text-align: center; color: #a1a1aa; margin: 0 0 18px; line-height: 1.5; }
+    .verify-sub strong { color: #fff; }
+    .code-input { width: 100%; box-sizing: border-box; font: 800 32px/1 Inter, sans-serif; letter-spacing: 12px; text-align: center;
+      padding: 14px 0 14px 12px; border-radius: 12px; border: 2px solid #3f3f46; background: #0f0f10; color: #fff; font-variant-numeric: tabular-nums; }
+    .code-input:focus { outline: none; border-color: #3b82f6; }
+    .verify-actions { display: grid; gap: 10px; margin-top: 14px; }
+    .link-btn { background: none; border: 0; color: #60a5fa; font: 600 14px Inter, sans-serif; cursor: pointer; padding: 6px; }
+    .link-btn:disabled { color: #71717a; cursor: default; }
+    .verify-foot { text-align: center; font-size: 13px; color: #71717a; margin-top: 8px; }
+    .verify-foot a { color: #a1a1aa; }
+  </style>
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="verify-icon"><i class='bx bx-envelope'></i></div>
+      <h2 class="title" style="text-align:center">{% if purpose == 'register' %}Verify your email{% else %}Check your email{% endif %}</h2>
+      <p class="verify-sub">We sent a 6-digit code to <strong>{{ masked_email }}</strong>.<br>
+        {% if purpose == 'register' %}Enter it to activate your account.{% else %}Enter it to finish logging in.{% endif %}</p>
+      {% include "partials/messages.html" %}
+
+      <form method="post" class="login-form" autocomplete="off">
+        {% csrf_token %}
+        <input class="code-input" name="code" inputmode="numeric" pattern="\d{6}" maxlength="6" required autofocus
+               autocomplete="one-time-code" placeholder="••••••" aria-label="6-digit code" />
+        <div class="verify-actions">
+          <button type="submit" class="sign-in-btn">Verify</button>
+        </div>
+      </form>
+
+      <form method="post" style="text-align:center;margin-top:6px">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="resend" />
+        <button type="submit" class="link-btn" id="resend">Resend code</button>
+      </form>
+      <p class="verify-foot">The code expires in 10 minutes. Check your spam folder if you can't find it.<br>
+        <a href="{% url back_url %}">← Back to log in</a></p>
+    </div>
+  </div>
+  <script>
+    // Digits only; submit automatically once all 6 are typed.
+    (function () {
+      var input = document.querySelector('.code-input');
+      input.addEventListener('input', function () {
+        input.value = input.value.replace(/\D/g, '').slice(0, 6);
+        if (input.value.length === 6) input.form.submit();
+      });
+      // Resend is allowed once a minute.
+      var btn = document.getElementById('resend'), left = 60;
+      btn.disabled = true;
+      var t = setInterval(function () {
+        left -= 1;
+        btn.textContent = left > 0 ? 'Resend code in ' + left + 's' : 'Resend code';
+        if (left <= 0) { btn.disabled = false; clearInterval(t); }
+      }, 1000);
+    })();
+  </script>
+</body>
+</html>

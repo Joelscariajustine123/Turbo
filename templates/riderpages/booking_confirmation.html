@@ -8,7 +8,7 @@
 
     <div class="card stack">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-        <h1 style="font-size:1.6rem;">{% if ride.status == 'PENDING' %}Confirm your ride{% else %}Ride #{{ ride.id }}{% endif %}</h1>
+        <h1 style="font-size:1.6rem;">{% if can_pay and ride.status == 'COMPLETED' %}Pay for your ride{% else %}Ride #{{ ride.id }}{% endif %}</h1>
         <span class="badge badge-{{ ride.status|lower }}">{{ ride.get_status_display }}</span>
       </div>
 
@@ -28,23 +28,29 @@
         <strong>₹{{ ride.fare|floatformat:2 }}</strong>
       </div>
 
-      {% if ride.status == 'PENDING' %}
+      {% if can_pay %}
         <form id="payment-form" method="POST" class="stack">
           {% csrf_token %}
-          <p class="muted">Choose how you'd like to pay:</p>
+          <p class="muted">{% if ride.status == 'COMPLETED' %}Your ride is complete. How would you like to pay?{% else %}Choose how you'd like to pay:{% endif %}</p>
           <div class="pay-options">
             <button type="button" id="upi-payment-btn" class="btn btn-primary"><i class="bx bx-qr"></i>Pay with UPI</button>
             <button type="submit" name="payment_method" value="cash" class="btn btn-ghost"><i class="bx bx-money"></i>Pay with cash</button>
           </div>
           <input type="hidden" name="transaction_id" id="transaction-id-hidden">
         </form>
+        {% if ride.status == 'PENDING' %}
         <form method="post" action="{% url 'riderpages:cancel_ride' ride.id %}" style="text-align:center;">
           {% csrf_token %}
           <button type="submit" class="link-btn danger" onclick="return confirm('Cancel this ride?');">Cancel booking</button>
         </form>
+        {% endif %}
       {% elif ride.status == 'CONFIRMED' or ride.status == 'ACCEPTED' or ride.status == 'ARRIVED' or ride.status == 'IN_PROGRESS' %}
         <div class="alert alert-info"><i class="bx bx-loader-alt bx-spin"></i>{% if ride.status == 'CONFIRMED' %}Waiting for a driver to accept your ride…{% else %}{{ ride.get_status_display }} — follow your driver live.{% endif %}</div>
         <a href="{% url 'riderpages:track_ride' ride.id %}" class="btn btn-primary btn-block"><i class="bx bx-current-location"></i>Track your ride live</a>
+      {% elif ride.status == 'COMPLETED' and ride.payment_status == 'CASH_DUE' %}
+        <div class="alert alert-info"><i class="bx bx-money"></i><span>Please pay <strong>₹{{ ride.fare|floatformat:2 }}</strong> to your driver in cash. They'll confirm once they've received it.</span></div>
+      {% elif ride.status == 'COMPLETED' and ride.payment_status == 'PAID' %}
+        <div class="alert alert-success"><i class="bx bx-check-circle"></i><span>Paid{% if ride.payment_method %} by {{ ride.get_payment_method_display }}{% endif %}{% if ride.paid_at %} on {{ ride.paid_at|date:"d M, H:i" }}{% endif %}. Thank you!</span></div>
       {% else %}
         <p class="muted">This ride is <strong>{{ ride.get_status_display|lower }}</strong>.</p>
       {% endif %}
@@ -52,7 +58,7 @@
   </div>
 </section>
 
-{% if ride.status == 'PENDING' %}
+{% if can_pay %}
 <div id="upi-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="upi-title">
   <div class="card modal">
     <h2 id="upi-title" style="font-size:1.3rem;">Scan to pay with UPI</h2>
@@ -74,7 +80,7 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if ride.status == 'PENDING' %}
+{% if can_pay %}
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
   (function () {

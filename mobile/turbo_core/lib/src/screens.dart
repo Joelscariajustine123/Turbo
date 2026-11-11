@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'auth.dart';
@@ -107,7 +109,11 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
     });
     try {
-      await AuthScope.read(context).login(_email.text, _password.text);
+      final auth = AuthScope.read(context);
+      final challenge = await auth.login(_email.text, _password.text);
+      if (challenge != null && mounted) {
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => EmailCodeScreen(challenge: challenge)));
+      }
     } catch (e) {
       if (mounted) setState(() => _error = errorText(e));
     } finally {
@@ -212,9 +218,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _error = null;
     });
     try {
-      await AuthScope.read(context).register({
+      final auth = AuthScope.read(context);
+      final challenge = await auth.register({
         for (final k in ['full_name', 'username', 'email', 'phone', 'password']) k: _c[k]!.text.trim(),
       });
+      if (challenge != null && mounted) {
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => EmailCodeScreen(challenge: challenge)));
+      }
     } catch (e) {
       if (mounted) setState(() => _error = errorText(e));
     } finally {
@@ -428,4 +438,120 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
           ]),
         ),
       );
+}
+
+
+/// "Check your email": enter the 6-digit code to finish login or registration.
+class EmailCodeScreen extends StatefulWidget {
+  const EmailCodeScreen({super.key, required this.challenge});
+
+  final EmailChallenge challenge;
+
+  @override
+  State<EmailCodeScreen> createState() => _EmailCodeScreenState();
+}
+
+class _EmailCodeScreenState extends State<EmailCodeScreen> {
+  final _code = TextEditingController();
+  String? _error;
+  String? _info;
+  bool _busy = false;
+  int _wait = 60;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCooldown();
+  }
+
+  void _startCooldown() {
+    _timer?.cancel();
+    _wait = 60;
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return;
+      setState(() => _wait = _wait > 0 ? _wait - 1 : 0);
+      if (_wait == 0) t.cancel();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _code.dispose();
+    super.dispose();
+  }
+
+  Future<void> _verify() async {
+    if (!RegExp(r'^\d{6}$').hasMatch(_code.text)) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await AuthScope.read(context).verifyEmail(widget.challenge, _code.text);
+      // TurboApp swaps to the home screen once the user is set.
+    } catch (e) {
+      if (mounted) setState(() => _error = errorText(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _resend() async {
+    setState(() => _busy = true);
+    try {
+      final msg = await AuthScope.read(context).resendCode(widget.challenge);
+      if (mounted) setState(() => _info = msg);
+      _startCooldown();
+    } catch (e) {
+      if (mounted) setState(() => _error = errorText(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final register = widget.challenge.purpose == 'register';
+    return Scaffold(
+      appBar: AppBar(title: Text(register ? 'Verify your email' : 'Check your email')),
+      body: SafeArea(
+        child: ListView(padding: const EdgeInsets.all(24), children: [
+          Icon(Icons.mark_email_read_outlined, size: 56, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 16),
+          Text('We sent a 6-digit code to ${widget.challenge.maskedEmail}.',
+              textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 6),
+          Text(register ? 'Enter it to activate your account.' : 'Enter it to finish logging in.',
+              textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60)),
+          const SizedBox(height: 20),
+          ErrorBanner(_error),
+          if (_info != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_info!, textAlign: TextAlign.center)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _code,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            textAlign: TextAlign.center,
+            autofillHints: const [AutofillHints.oneTimeCode],
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: 12),
+            decoration: const InputDecoration(counterText: '', hintText: '••••••'),
+            onChanged: (v) {
+              if (v.length == 6) _verify();
+            },
+          ),
+          const SizedBox(height: 16),
+          FilledButton(onPressed: _busy ? null : _verify, child: Text(_busy ? 'Checking…' : 'Verify')),
+          TextButton(
+            onPressed: _busy || _wait > 0 ? null : _resend,
+            child: Text(_wait > 0 ? 'Resend code in ${_wait}s' : 'Resend code'),
+          ),
+          const Text('The code expires in 10 minutes. Check your spam folder if you can\'t find it.',
+              textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 12)),
+        ]),
+      ),
+    );
+  }
 }

@@ -47,6 +47,10 @@ python manage.py test                        # 48 tests
 | `TURBO_OTP_TTL_MINUTES` | `10` | How long a pickup OTP stays valid |
 | `TURBO_OTP_LOCK_MINUTES` | `10` | Lock after 5 wrong OTP attempts |
 | `TURBO_TRACK_RETENTION_DAYS` | `30` | How long trip GPS breadcrumbs are kept |
+| `TURBO_GEOFENCE_RADIUS_M` | `50` | Driver must be this close to the pickup/drop for "Arrived"/"Complete" |
+| `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | — | Gmail address + app password for verification codes |
+| `DEFAULT_FROM_EMAIL` | `Turbo Cab <EMAIL_HOST_USER>` | Sender shown in the emails |
+| `TURBO_EMAIL_OTP` | `auto` | `on` / `off` / `auto` (on when email is configured) |
 
 ### How fares work
 The client sends pickup/drop **coordinates**; the server works out the distance (OSRM road route, or straight line × 1.3 if OSRM is unreachable, with a 5-minute back-off) and the fare: `₹50 + km × rate` (Sedan 15, SUV 20, Bike 8, Auto 12, set in `riderpages/models.py`). Clients cannot set the price.
@@ -61,8 +65,10 @@ Auth is JWT: `POST /api/auth/login/` returns `access` (30 min) and `refresh` (14
 |---|---|---|---|
 | GET | `/api/meta/` | anyone | vehicle types + rates, statuses, UPI ID |
 | POST | `/api/contact/` | anyone | `{name, email, message}` |
-| POST | `/api/auth/register/` | anyone | `{role: rider\|driver, full_name, username, email, phone, password}` → tokens |
-| POST | `/api/auth/login/` | anyone | `{email, password, role}` → `{access, refresh, user}` |
+| POST | `/api/auth/register/` | anyone | `{role: rider\|driver, full_name, username, email, phone, password}` → `{otp_required, challenge}` |
+| POST | `/api/auth/login/` | anyone | `{email, password, role}` → `{otp_required, challenge, email}` (code emailed) |
+| POST | `/api/auth/verify-email/` | anyone | `{challenge, code}` → `{access, refresh, user}` |
+| POST | `/api/auth/resend-code/` | anyone | `{challenge}` → new code (once a minute) |
 | POST | `/api/auth/refresh/` | anyone | `{refresh}` |
 | POST | `/api/auth/logout/` | user | `{refresh}`, revokes it |
 | GET / PATCH | `/api/auth/me/` | user | `full_name`, `email`, `phone` |
@@ -70,7 +76,9 @@ Auth is JWT: `POST /api/auth/login/` returns `access` (30 min) and `refresh` (14
 | POST | `/api/rider/quote/` | rider | `{pickup_lat, pickup_lng, drop_lat, drop_lng}` → distance, route line, fare per vehicle |
 | GET / POST | `/api/rider/rides/` | rider | list (`?state=active\|past`) / book `{pickup, drop, car_type, …coords}` |
 | GET | `/api/rider/rides/{id}/` | rider | |
-| POST | `/api/rider/rides/{id}/pay/` | rider | `{payment_method: cash\|upi, transaction_id}` |
+| POST | `/api/rider/rides/{id}/pay/` | rider | after the ride: `{payment_method: cash\|upi, transaction_id}` |
+| GET | `/api/driver/rides/unpaid/` | driver | completed rides still waiting for payment |
+| POST | `/api/driver/rides/{id}/cash-collected/` | driver | confirm the rider paid in cash |
 | POST | `/api/rider/rides/{id}/cancel/` | rider | while pending/confirmed |
 | POST | `/api/rider/rides/{id}/rate/` | rider | `{rating: 1-5, review_text}` once, after completion |
 | GET / PATCH | `/api/driver/profile/` | driver | JSON or multipart (`profile_photo`) |
@@ -200,3 +208,34 @@ Without a key the maps use OpenStreetMap and work immediately. To switch to Goog
 5. In Render, open **turbo → Environment**, add `GOOGLE_MAPS_API_KEY` (and `GOOGLE_MAPS_MAP_ID`), then **Save, rebuild and deploy**.
 
 If Google ever rejects the key, the pages switch back to OpenStreetMap by themselves.
+
+---
+
+## 7. Email verification codes (register + login)
+
+* **Register:** a 6-digit code is emailed. The account works only after the code is entered.
+* **Login:** email + password first, then a code emailed to the account's address (for riders, drivers and admins).
+* Codes expire after 10 minutes and are single-use. 5 wrong tries burn the code. "Resend" works once a minute (max 6 per hour). Only a keyed hash is stored.
+* Accounts that existed before this feature count as verified. Changing your email means confirming the new address at the next login.
+* The Django admin site (`/admin/`) still uses password only.
+
+### Gmail setup
+1. Turn on **2-Step Verification** for the Gmail account at [myaccount.google.com/security](https://myaccount.google.com/security).
+2. Open [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), create an app password called "Turbo", and copy the 16-character password.
+3. In Render, open **turbo → Environment** and add:
+   * `EMAIL_HOST_USER` = your Gmail address
+   * `EMAIL_HOST_PASSWORD` = the app password (spaces are fine)
+4. **Render's free plan blocks outgoing SMTP** (ports 25/465/587). Gmail only works after upgrading the **turbo** web service to a paid instance (Starter). On the free plan the emails can't be sent.
+5. Save and deploy. With `TURBO_EMAIL_OTP=auto` (the default), codes switch on as soon as email is configured. Before that, login works without codes, so nobody gets locked out.
+
+Locally (`DEBUG=True`, no email settings) the codes are printed in the `runserver` console.
+
+## 8. Ride rules
+
+* **Payment after the ride:** booking sends the ride straight to drivers. When it's completed, the rider chooses UPI (QR + transaction ID → **Paid**) or cash (**Cash due** → the driver taps **Cash collected** → **Paid**).
+* **50 m rule:** "I've arrived" unlocks only when the driver's live GPS is within 50 m of the pickup, and "Complete ride" only within 50 m of the destination. The fix must be at most 30 s old and accurate to ±75 m. The server enforces this, so the buttons can't be bypassed. The rider's OTP can be entered only after "Arrived".
+* **Precision:**
+  * GPS is requested at the highest accuracy, and rough fixes worse than ±150 m are ignored while a good recent one exists.
+  * Distance left is measured along the route line, and the route is recalculated when the driver strays 100 m.
+  * ETAs come from the route's real driving times.
+  * The trip trail is recorded every 5 s or 10 m.

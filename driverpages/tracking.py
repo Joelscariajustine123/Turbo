@@ -26,11 +26,18 @@ from riderpages.pricing import haversine_km, route_between
 from .models import AvailabilityStatus, DriverLocation, TripLocationPoint
 
 STALE_AFTER = timedelta(seconds=20)       # rider sees "GPS signal lost" after this
-HISTORY_EVERY = 15                        # seconds between breadcrumb points
-HISTORY_MIN_METRES = 30
-OFF_ROUTE_KM = 0.25                       # recalculate the route if the driver strays this far
-ROUTE_MAX_AGE = 300                       # seconds; refresh traffic-free routes periodically
-ARRIVAL_RADIUS_KM = 0.15                  # "you're at the pickup" hint for the driver
+HISTORY_EVERY = 5                         # seconds between breadcrumb points ...
+HISTORY_MIN_METRES = 10                   # ... or this much movement
+OFF_ROUTE_KM = 0.10                       # recalculate the route if the driver strays 100 m
+ROUTE_MAX_AGE = 120                       # seconds; refresh routes regularly
+BAD_FIX_ACCURACY_M = 150                  # ignore fixes worse than this while a good one is recent
+GOOD_FIX_MAX_AGE = timedelta(seconds=20)
+GEOFENCE_MAX_AGE = timedelta(seconds=30)  # "Arrived"/"Complete" need a fix at most this old ...
+GEOFENCE_MAX_ACCURACY_M = 75              # ... and at least this precise
+
+
+def geofence_radius_m():
+    return getattr(settings, 'TURBO_GEOFENCE_RADIUS_M', 50)
 
 DRIVER_STATUS_LABELS = {
     'offline': 'Offline',
@@ -86,6 +93,12 @@ def update_location(driver, latitude, longitude, accuracy=None, speed=None, head
         raise ValidationError("You are offline. Go online to share your location.")
     lat, lng = validate_coordinates(latitude, longitude)
     ride = active_trip_for_driver(driver)
+    current = DriverLocation.objects.filter(driver=driver).first()
+    if (accuracy is not None and accuracy > BAD_FIX_ACCURACY_M and current is not None and current.is_online
+            and current.accuracy is not None and current.accuracy <= BAD_FIX_ACCURACY_M
+            and timezone.now() - current.updated_at < GOOD_FIX_MAX_AGE):
+        # A rough network fix right after a good GPS one: keep the precise position.
+        return current, ride
     values = {
         'latitude': Decimal(f'{lat:.6f}'), 'longitude': Decimal(f'{lng:.6f}'),
         'accuracy': accuracy, 'speed': speed, 'heading': heading,
@@ -151,14 +164,32 @@ def _polyline_km(points, start=0):
     return sum(haversine_km(*points[i], *points[i + 1]) for i in range(start, len(points) - 1))
 
 
+def _project(lat, lng, a, b):
+    """Project point P onto segment AB (local flat approximation, fine for <100 km).
+    Returns (t along AB in 0..1, perpendicular distance in km)."""
+    k = math.cos(math.radians(lat)) * 111.32
+    px, py = lng * k, lat * 110.574
+    ax, ay, bx, by = a[1] * k, a[0] * 110.574, b[1] * k, b[0] * 110.574
+    dx, dy = bx - ax, by - ay
+    seg2 = dx * dx + dy * dy
+    t = 0.0 if seg2 == 0 else max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / seg2))
+    cx, cy = ax + t * dx, ay + t * dy
+    return t, math.hypot(px - cx, py - cy)
+
+
 def _remaining_along(geometry, lat, lng):
-    """Distance left along `geometry` from the point nearest to (lat, lng), and how far off-route we are."""
-    best_i, best_d = 0, float('inf')
-    for i, (plat, plng) in enumerate(geometry):
-        d = haversine_km(lat, lng, plat, plng)
-        if d < best_d:
-            best_i, best_d = i, d
-    return best_d + _polyline_km(geometry, best_i), best_d
+    """Distance still to drive along `geometry` from the driver's position projected onto
+    the route, and how far the driver is from the route (km)."""
+    if len(geometry) < 2:
+        return haversine_km(lat, lng, *geometry[-1]), 0.0
+    best = (0, 0.0, float('inf'))  # segment index, t, off-route distance
+    for i in range(len(geometry) - 1):
+        t, off = _project(lat, lng, geometry[i], geometry[i + 1])
+        if off < best[2]:
+            best = (i, t, off)
+    i, t, off = best
+    seg = haversine_km(*geometry[i], *geometry[i + 1])
+    return seg * (1 - t) + _polyline_km(geometry, i + 1), off
 
 
 def _cached_route(key, origin, target, max_age=ROUTE_MAX_AGE):
@@ -179,14 +210,17 @@ def _cached_route(key, origin, target, max_age=ROUTE_MAX_AGE):
 
 
 def _eta_minutes(cached, remaining_km):
+    """Share of the route's expected driving time still ahead (OSRM durations per road type)."""
     if remaining_km <= 0.02:
         return 0
     if cached['distance_km'] > 0 and cached['duration_min'] > 0:
-        speed = cached['distance_km'] / (cached['duration_min'] / 60)
+        minutes = cached['duration_min'] * min(1.0, remaining_km / cached['distance_km'])
+        speed = remaining_km / (minutes / 60) if minutes else 25
+        if not 8 <= speed <= 80:  # implausible (e.g. straight-line estimate): fall back to city speed
+            minutes = remaining_km / 25 * 60
     else:
-        speed = 25
-    speed = min(max(speed, 12), 60)  # keep ETAs sensible for city driving
-    return max(1, math.ceil(remaining_km / speed * 60))
+        minutes = remaining_km / 25 * 60
+    return max(1, math.ceil(minutes))
 
 
 def trip_route(ride):
@@ -201,6 +235,48 @@ def trip_route(ride):
                   'duration_min': route.duration_min, 'source': route.source}
         cache.set(key, cached, 6 * 3600)
     return cached
+
+
+# ---------------------------------------------------------------- geofence (50 m rule)
+
+def _target_point(ride, kind):
+    lat, lng = (ride.pickup_lat, ride.pickup_lng) if kind == 'pickup' else (ride.drop_lat, ride.drop_lng)
+    return None if lat is None or lng is None else (float(lat), float(lng))
+
+
+def geofence_status(ride, loc, kind):
+    """How far the driver's latest fix is from the pickup/drop, and whether the 50 m rule is met."""
+    target = _target_point(ride, kind)
+    radius = geofence_radius_m()
+    if target is None:
+        return {'radius_m': radius, 'distance_m': None, 'within': True, 'reason': 'no_coordinates'}
+    if loc is None or not loc.is_online:
+        return {'radius_m': radius, 'distance_m': None, 'within': False, 'reason': 'no_gps'}
+    distance_m = haversine_km(float(loc.latitude), float(loc.longitude), *target) * 1000
+    fresh = timezone.now() - loc.updated_at <= GEOFENCE_MAX_AGE
+    precise = loc.accuracy is None or loc.accuracy <= GEOFENCE_MAX_ACCURACY_M
+    within = distance_m <= radius and fresh and precise
+    reason = 'ok' if within else 'stale' if not fresh else 'imprecise' if not precise else 'too_far'
+    return {'radius_m': radius, 'distance_m': round(distance_m), 'within': within, 'reason': reason,
+            'accuracy_m': loc.accuracy}
+
+
+def require_within(ride, kind):
+    """Raise unless the driver's live position is within the radius of the pickup/drop."""
+    loc = DriverLocation.objects.filter(driver_id=ride.driver_id).first()
+    g = geofence_status(ride, loc, kind)
+    if g['within']:
+        return
+    place = 'pickup point' if kind == 'pickup' else 'destination'
+    action = '"Arrived"' if kind == 'pickup' else '"Complete ride"'
+    messages = {
+        'no_gps': f"We don't have your live location. Keep the app open with GPS on to use {action}.",
+        'stale': f"Your last GPS update is too old. Wait for a fresh fix to use {action}.",
+        'imprecise': f"Your GPS isn't precise enough (±{round(g.get('accuracy_m') or 0)} m). "
+                     "Move to open sky and try again.",
+        'too_far': f"You're {g['distance_m']} m from the {place}. {action} unlocks within {g['radius_m']} m.",
+    }
+    raise ValidationError(messages[g['reason']], code=g['reason'])
 
 
 # ---------------------------------------------------------------- shared tracking payload
@@ -232,6 +308,9 @@ def trip_payload(ride, loc=None):
         'eta_minutes': None,
         'eta_at': None,
         'near_target': False,
+        'geofence': None,
+        'payment_status': ride.payment_status,
+        'payment_status_display': ride.get_payment_status_display(),
         'timestamps': {k: getattr(ride, f'{k}_at') for k in ('accepted', 'arrived', 'started', 'completed')},
     }
     tr = trip_route(ride) if ride.status in TRIP_STATUSES else None
@@ -255,8 +334,10 @@ def trip_payload(ride, loc=None):
         'route': {'geometry': cached['geometry'], 'source': cached['source'], 'to': stage},
         'eta_minutes': eta,
         'eta_at': timezone.now() + timedelta(minutes=eta),
-        'near_target': haversine_km(*here, *target_xy) <= ARRIVAL_RADIUS_KM,
     })
+    g = geofence_status(ride, loc, stage)
+    payload['geofence'] = g
+    payload['near_target'] = g['within']
     if stage == 'pickup':
         payload['distance_to_pickup_km'] = round(remaining, 2)
         if tr:

@@ -35,10 +35,16 @@ class TripTracking {
     this.distanceToDestinationKm,
     this.etaMinutes,
     this.driverCard,
+    this.withinRadius = false,
+    this.radiusM = 50,
+    this.distanceToTargetM,
+    this.geofenceReason,
+    this.gpsAccuracyM,
   });
 
   factory TripTracking.fromJson(Map<String, dynamic> j) {
     final loc = j['driver_location'] as Map<String, dynamic>?;
+    final g = j['geofence'] as Map<String, dynamic>?;
     return TripTracking(
       rideId: j['ride_id'] as int,
       status: str(j['status']),
@@ -61,7 +67,25 @@ class TripTracking {
       distanceToDestinationKm: toDoubleOrNull(j['distance_to_destination_km']),
       etaMinutes: j['eta_minutes'] as int?,
       driverCard: j['driver'] as Map<String, dynamic>?,
+      withinRadius: g?['within'] == true,
+      radiusM: (g?['radius_m'] as int?) ?? 50,
+      distanceToTargetM: g?['distance_m'] as int?,
+      geofenceReason: g?['reason'] as String?,
+      gpsAccuracyM: toDoubleOrNull(g?['accuracy_m']),
     );
+  }
+
+  /// Server-side 50 m rule for "Arrived" (pickup) and "Complete" (destination).
+  final bool withinRadius;
+  final int radiusM;
+  final int? distanceToTargetM;
+  final String? geofenceReason;
+  final double? gpsAccuracyM;
+
+  String lockText(String place) {
+    if (geofenceReason == 'imprecise') return 'GPS ±${(gpsAccuracyM ?? 0).round()} m — too imprecise';
+    if (distanceToTargetM == null) return 'waiting for GPS';
+    return '${formatKm(distanceToTargetM! / 1000)} away · unlocks within $radiusM m of the $place';
   }
 
   final int rideId;

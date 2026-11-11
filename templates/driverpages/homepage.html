@@ -72,6 +72,28 @@
         {% endfor %}
     </section>
 
+    {% if unpaid_rides %}
+    <!-- Completed rides waiting for payment -->
+    <section class="ride-section">
+        <h3>Awaiting payment</h3>
+        {% for ride in unpaid_rides %}
+            <div class="ride-card">
+                <div class="ride-details">
+                    <p><strong>{{ ride.user.full_name }}</strong> · {{ ride.completed_at|date:"d M, H:i" }}</p>
+                    <p>{{ ride.pickup_location }} → {{ ride.drop_location }}</p>
+                    <p><strong>₹{{ ride.fare|floatformat:2 }}</strong> · {% if ride.payment_status == 'CASH_DUE' %}Rider chose cash{% else %}Rider hasn't paid yet{% endif %}</p>
+                </div>
+                <div class="ride-actions">
+                    <form method="post" action="{% url 'driverpages:collect_cash' ride.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn accept" onclick="return confirm('Did you receive ₹{{ ride.fare|floatformat:2 }} in cash?');">Cash collected</button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
     <!-- Section for New Ride Requests -->
     <section class="ride-section">
         <h3>New Ride Requests</h3>

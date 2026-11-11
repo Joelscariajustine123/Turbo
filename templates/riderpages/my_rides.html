@@ -30,9 +30,9 @@
               </td>
               <td data-label="Driver">{% if ride.driver %}{{ ride.driver.user.full_name }}{% else %}<span class="muted">—</span>{% endif %}</td>
               <td data-label="Status"><span class="badge badge-{{ ride.status|lower }}">{{ ride.get_status_display }}</span></td>
-              <td data-label="Fare" class="num">₹{{ ride.fare|floatformat:2 }}</td>
+              <td data-label="Fare" class="num">₹{{ ride.fare|floatformat:2 }}{% if ride.status == 'COMPLETED' %}<div class="muted" style="font-size:.78rem;font-weight:500">{{ ride.get_payment_status_display }}</div>{% endif %}</td>
               <td class="actions-cell" style="white-space:nowrap;text-align:right;">
-                {% if ride.status == 'PENDING' %}
+                {% if ride.status == 'PENDING' or ride.status == 'COMPLETED' and ride.payment_status == 'UNPAID' %}
                   <a href="{% url 'riderpages:booking_confirmation' ride.id %}" class="btn btn-primary btn-sm">Pay now</a>
                 {% elif ride.status == 'CONFIRMED' or ride.status == 'ACCEPTED' or ride.status == 'ARRIVED' or ride.status == 'IN_PROGRESS' %}
                   <a href="{% url 'riderpages:track_ride' ride.id %}" class="btn btn-primary btn-sm"><i class="bx bx-current-location"></i>Track</a>

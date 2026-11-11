@@ -76,6 +76,7 @@ def mark_arrived(driver, ride_id):
         ride = _locked_ride(driver, ride_id)
         if ride.status != 'ACCEPTED':
             raise ValidationError("You can only mark arrival while on the way to the pickup.")
+        tracking.require_within(ride, 'pickup')
         ride.status = 'ARRIVED'
         ride.arrived_at = timezone.now()
         ride.save(update_fields=['status', 'arrived_at', 'updated_at'])
@@ -89,7 +90,10 @@ def verify_pickup_otp(driver, ride_id, code, ip_address=None):
         ride = _locked_ride(driver, ride_id)
         if ride.otp_verified or ride.status == 'IN_PROGRESS':
             raise ValidationError("This ride has already started.")
-        if ride.status not in ('ACCEPTED', 'ARRIVED'):
+        if ride.status == 'ACCEPTED':
+            raise ValidationError("Tap \"Arrived\" when you reach the pickup (within "
+                                  f"{tracking.geofence_radius_m()} m), then enter the rider's OTP.")
+        if ride.status != 'ARRIVED':
             raise ValidationError("This ride can't be started.")
         result = otp.verify(ride, driver, code, ip_address)
         if result.ok:
@@ -113,6 +117,7 @@ def complete_ride(driver, ride_id):
         ride = Ride.objects.select_for_update().filter(id=ride_id, driver=driver).first()
         if ride is None or ride.status != 'IN_PROGRESS':
             raise ValidationError("A ride can only be completed after the passenger's OTP is verified.")
+        tracking.require_within(ride, 'destination')
         ride.status = 'COMPLETED'
         ride.completed_at = timezone.now()
         ride.save(update_fields=['status', 'completed_at', 'updated_at'])
@@ -124,6 +129,28 @@ def complete_ride(driver, ride_id):
         if not Ride.objects.filter(driver=driver, status__in=TRIP_STATUSES).exists():
             DriverProfile.objects.filter(pk=driver.pk, availability_status=AvailabilityStatus.ON_TRIP) \
                 .update(availability_status=AvailabilityStatus.AVAILABLE)
+    return ride
+
+
+def unpaid_rides(driver):
+    """Completed rides whose fare hasn't been settled yet."""
+    return (Ride.objects.select_related('user')
+            .filter(driver=driver, status='COMPLETED').exclude(payment_status='PAID').order_by('-completed_at'))
+
+
+def collect_cash(driver, ride_id):
+    """Driver confirms the rider paid in cash after the ride."""
+    with transaction.atomic():
+        ride = _locked_ride(driver, ride_id)
+        if ride.status != 'COMPLETED':
+            raise ValidationError("Cash can be collected once the ride is completed.")
+        if ride.payment_status == 'PAID':
+            raise ValidationError("This ride is already paid.")
+        ride.payment_method = 'CASH'
+        ride.transaction_id = None
+        ride.payment_status = 'PAID'
+        ride.paid_at = timezone.now()
+        ride.save(update_fields=['payment_method', 'transaction_id', 'payment_status', 'paid_at', 'updated_at'])
     return ride
 
 

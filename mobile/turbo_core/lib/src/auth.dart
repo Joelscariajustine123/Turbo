@@ -38,19 +38,38 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  Future<void> login(String email, String password) async {
+  /// Returns an [EmailChallenge] when a code was emailed (the usual case), or null when logged in.
+  Future<EmailChallenge?> login(String email, String password) async {
     final data = await api.postPublic('/auth/login/', {'email': email.trim(), 'password': password, 'role': role})
         as Map<String, dynamic>;
-    await api.saveSession(data);
-    _user = User.fromJson(data['user'] as Map<String, dynamic>);
-    notifyListeners();
+    return _handle(data);
   }
 
-  Future<void> register(Map<String, String> fields) async {
+  Future<EmailChallenge?> register(Map<String, String> fields) async {
     final data = await api.postPublic('/auth/register/', {...fields, 'role': role}) as Map<String, dynamic>;
+    return _handle(data);
+  }
+
+  /// Finish login/registration with the 6-digit code from the email.
+  Future<void> verifyEmail(EmailChallenge challenge, String code) async {
+    final data = await api.postPublic('/auth/verify-email/', {'challenge': challenge.token, 'code': code})
+        as Map<String, dynamic>;
+    await _handle(data);
+  }
+
+  Future<String> resendCode(EmailChallenge challenge) async {
+    final data = await api.postPublic('/auth/resend-code/', {'challenge': challenge.token}) as Map<String, dynamic>;
+    return str(data['detail']);
+  }
+
+  Future<EmailChallenge?> _handle(Map<String, dynamic> data) async {
+    if (data['otp_required'] == true) {
+      return EmailChallenge(str(data['challenge']), str(data['email']), str(data['purpose']));
+    }
     await api.saveSession(data);
     _user = User.fromJson(data['user'] as Map<String, dynamic>);
     notifyListeners();
+    return null;
   }
 
   Future<void> logout() async {
@@ -95,4 +114,14 @@ class AuthScope extends InheritedNotifier<AuthController> {
   /// Same as [of] but without rebuilding when the user changes (for callbacks).
   static AuthController read(BuildContext context) =>
       context.getInheritedWidgetOfExactType<AuthScope>()!.notifier!;
+}
+
+
+/// A pending login/registration waiting for the emailed code.
+class EmailChallenge {
+  EmailChallenge(this.token, this.maskedEmail, this.purpose);
+
+  final String token;
+  final String maskedEmail;
+  final String purpose; // 'login' | 'register'
 }

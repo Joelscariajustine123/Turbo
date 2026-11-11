@@ -2,6 +2,7 @@
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import transaction
+from django.utils import timezone
 
 from .models import PAYMENT_METHOD_CHOICES, ContactMessage, Ride
 from .pricing import calculate_fare, get_route, parse_point
@@ -28,15 +29,22 @@ def create_ride(user, *, pickup, drop, car_type, pickup_lat, pickup_lng, drop_la
         pickup_location=pickup[:255], drop_location=drop[:255],
         pickup_lat=round(float(pickup_lat), 6), pickup_lng=round(float(pickup_lng), 6),
         drop_lat=round(float(drop_lat), 6), drop_lng=round(float(drop_lng), 6),
-        car_type=car_type, distance=route.distance_km, fare=fare, status='PENDING',
+        # Sent to drivers straight away; the rider pays after the ride (see confirm_payment).
+        car_type=car_type, distance=route.distance_km, fare=fare, status='CONFIRMED',
     )
 
 
 def confirm_payment(ride, payment_method, transaction_id=''):
+    """Rider pays after the ride: UPI is paid at once, cash waits for the driver to confirm."""
     payment_method = (payment_method or '').upper()
     transaction_id = (transaction_id or '').strip()
-    if ride.status != 'PENDING':
-        raise ValidationError("This ride has already been confirmed.")
+    if ride.status == 'PENDING':
+        # Older bookings made before pay-after-ride: paying just releases them to drivers.
+        ride.status = 'CONFIRMED'
+    elif ride.status != 'COMPLETED':
+        raise ValidationError("You can pay once your ride is completed.")
+    if ride.payment_status == 'PAID':
+        raise ValidationError("This ride is already paid.")
     if payment_method not in VALID_PAYMENT_METHODS:
         raise ValidationError("Please select a payment method.")
     if payment_method == 'UPI' and not transaction_id:
@@ -44,8 +52,11 @@ def confirm_payment(ride, payment_method, transaction_id=''):
 
     ride.payment_method = payment_method
     ride.transaction_id = transaction_id[:100] if payment_method == 'UPI' else None
-    ride.status = 'CONFIRMED'
-    ride.save(update_fields=['payment_method', 'transaction_id', 'status', 'updated_at'])
+    if payment_method == 'UPI':
+        ride.payment_status, ride.paid_at = 'PAID', timezone.now()
+    else:
+        ride.payment_status = 'CASH_DUE'
+    ride.save(update_fields=['payment_method', 'transaction_id', 'payment_status', 'paid_at', 'status', 'updated_at'])
     return ride
 
 

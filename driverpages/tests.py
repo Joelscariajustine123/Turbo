@@ -33,8 +33,10 @@ class DriverFlowTests(TestCase):
         self.ride.refresh_from_db()
         self.assertEqual(self.ride.status, 'ACCEPTED')
 
+        # (This ride has no map coordinates, so the 50 m rule doesn't apply.)
         from driverpages import services
         from riderpages import otp
+        services.mark_arrived(self.driver, self.ride.id)
         services.verify_pickup_otp(self.driver, self.ride.id, otp.for_rider(self.ride).code)
         self.client.post(reverse('driverpages:complete_ride', args=[self.ride.id]))
         self.ride.refresh_from_db()

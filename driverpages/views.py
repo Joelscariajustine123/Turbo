@@ -22,6 +22,7 @@ def homepage(request):
         'driver': driver,
         'ride_requests': services.available_rides(driver),
         'ongoing_rides': services.ongoing_rides(driver),
+        'unpaid_rides': services.unpaid_rides(driver)[:10],
     })
 
 
@@ -50,6 +51,12 @@ def accept_ride(request, ride_id):
 @require_POST
 def complete_ride(request, ride_id):
     return _ride_action(request, ride_id, services.complete_ride, "Ride marked as complete!")
+
+
+@driver_required
+@require_POST
+def collect_cash(request, ride_id):
+    return _ride_action(request, ride_id, services.collect_cash, "Cash payment recorded. Thanks!")
 
 
 @driver_required

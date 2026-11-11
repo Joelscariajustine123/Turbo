@@ -250,6 +250,33 @@ TURBO_OTP_TTL_MINUTES = int(os.environ.get('TURBO_OTP_TTL_MINUTES', 10))
 TURBO_OTP_LOCK_MINUTES = int(os.environ.get('TURBO_OTP_LOCK_MINUTES', 10))
 TURBO_TRACK_RETENTION_DAYS = int(os.environ.get('TURBO_TRACK_RETENTION_DAYS', 30))  # breadcrumb history
 
-# Tests never call the external routing server.
+# Driver must be this close (live GPS) to tap "Arrived" at pickup / "Complete" at the drop.
+TURBO_GEOFENCE_RADIUS_M = int(os.environ.get('TURBO_GEOFENCE_RADIUS_M', 50))
+
+# ---------------------------------------------------------------------------
+# Email (verification codes for register + login)
+# ---------------------------------------------------------------------------
+# Gmail: EMAIL_HOST_USER=you@gmail.com, EMAIL_HOST_PASSWORD=<16-char app password>.
+# NOTE: Render's free plan blocks SMTP ports, so Gmail only works on a paid instance.
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = env_bool('EMAIL_USE_TLS', True)
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '').replace(' ', '')  # app passwords are shown with spaces
+EMAIL_TIMEOUT = 15
+EMAIL_CONFIGURED = bool(EMAIL_HOST_USER and EMAIL_HOST_PASSWORD)
+EMAIL_BACKEND = ('django.core.mail.backends.smtp.EmailBackend' if EMAIL_CONFIGURED
+                 else 'django.core.mail.backends.console.EmailBackend')  # dev: codes printed in the server console
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL',
+                                    f'Turbo Cab <{EMAIL_HOST_USER}>' if EMAIL_HOST_USER else 'Turbo Cab <no-reply@turbocab.local>')
+
+# Require emailed codes at register/login?  on | off | auto (default).
+# auto = on when email is configured (or in local DEBUG, where codes go to the console),
+# so a deploy without email settings never locks everyone out.
+_otp_mode = os.environ.get('TURBO_EMAIL_OTP', 'auto').lower()
+EMAIL_OTP_ENABLED = {'on': True, 'off': False}.get(_otp_mode, EMAIL_CONFIGURED or DEBUG)
+
+# Tests never call the external routing server, and always exercise email codes.
 if 'test' in sys.argv:
     ROUTING_URL = ''
+    EMAIL_OTP_ENABLED = True

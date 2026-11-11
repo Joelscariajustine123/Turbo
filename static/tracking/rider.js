@@ -144,7 +144,10 @@
   function renderDone() {
     var d = state.data;
     $('trk-done-fare').textContent = d.fare != null ? '₹' + Number(d.fare).toFixed(2) : '';
-    $('trk-done-pay').textContent = d.payment_method_display ? 'Paid by ' + d.payment_method_display : '';
+    var paid = d.payment_status === 'PAID', cash = d.payment_status === 'CASH_DUE';
+    $('trk-done-pay').textContent = paid ? 'Paid' + (d.payment_method_display ? ' by ' + d.payment_method_display : '') + ' — thank you!'
+      : cash ? 'Please pay your driver in cash.' : 'Choose how to pay for your ride.';
+    $('trk-pay-now').classList.toggle('trk-hidden', paid || cash);
     var stars = $('trk-stars');
     if (d.rating) { stars.innerHTML = '<span class="trk-rating" style="font-size:1.1rem">You rated ' + d.rating + ' ★</span>'; return; }
     if (stars.dataset.ready) return;

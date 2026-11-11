@@ -47,15 +47,16 @@
 
     <div class="trk-card">
       <div id="trk-points" class="trk-points"></div>
-      <p class="trk-small">{{ ride.get_car_type_display }} · ₹{{ ride.fare|floatformat:2 }}{% if ride.payment_method %} · {{ ride.get_payment_method_display }}{% endif %}</p>
+      <p class="trk-small">{{ ride.get_car_type_display }} · ₹{{ ride.fare|floatformat:2 }} · pay after your ride (UPI or cash)</p>
     </div>
 
     <div id="trk-done" class="trk-card trk-hidden" style="text-align:center;">
       <h2>You've arrived 🎉</h2>
       <p class="trk-muted"><strong id="trk-done-fare" style="color:#fff;font-size:1.4rem"></strong><br><span id="trk-done-pay"></span></p>
+      <a id="trk-pay-now" class="trk-btn primary block trk-hidden" href="{% url 'riderpages:booking_confirmation' ride.id %}"><i class="bx bx-wallet"></i>Pay now — UPI or cash</a>
       <p class="trk-small">How was your driver?</p>
       <div id="trk-stars" class="trk-stars"></div>
-      <a class="trk-btn primary block" href="{% url 'riderpages:map_view' %}"><i class="bx bxs-taxi"></i>Book another ride</a>
+      <a class="trk-btn ghost block" href="{% url 'riderpages:map_view' %}"><i class="bx bxs-taxi"></i>Book another ride</a>
     </div>
 
     <p class="trk-small"><i class="bx bx-lock-alt"></i> Only you can see your driver's live location for this ride. Sharing stops when the ride ends.</p>

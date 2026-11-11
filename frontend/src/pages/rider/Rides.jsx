@@ -73,6 +73,7 @@ export function RideDetail() {
   const { id } = useParams();
   const { data: ride, error, loading, setData, reload } = useApi(`/rider/rides/${id}/`, { pollMs: 10000 });
   const onTrip = ride && TRIP.includes(ride.status);
+  const canPay = ride && (ride.status === 'PENDING' || ride.needs_payment);
   // Live driver position + route, every 3 s during the trip.
   const live = useApi(onTrip ? `/rider/ride/tracking/?ride_id=${id}` : null, { pollMs: 3000 });
   const { data: meta } = useApi('/meta/');
@@ -129,14 +130,21 @@ export function RideDetail() {
           </div>
         )}
 
-        {ride.status === 'PENDING' && !showUpi && (
+        {ride.status === 'COMPLETED' && ride.payment_status === 'CASH_DUE' && (
+          <Alert kind="info">Please pay {money(ride.fare)} to your driver in cash. They'll confirm once they've received it.</Alert>
+        )}
+        {ride.status === 'COMPLETED' && ride.payment_status === 'PAID' && (
+          <Alert kind="success">Paid{ride.payment_method_display ? ` by ${ride.payment_method_display}` : ''} — thank you!</Alert>
+        )}
+        {canPay && !showUpi && <p className="muted">Your ride is complete. How would you like to pay?</p>}
+        {canPay && !showUpi && (
           <div className="actions">
             <button className="btn primary" disabled={act.busy} onClick={() => setShowUpi(true)}>Pay with UPI</button>
             <button className="btn" disabled={act.busy} onClick={() => post('pay', { payment_method: 'cash' })}>Pay with cash</button>
           </div>
         )}
 
-        {ride.status === 'PENDING' && showUpi && meta && (
+        {canPay && showUpi && meta && (
           <div className="upi">
             <QRCodeSVG value={upiLink(meta.upi_id, ride.fare, ride.id)} size={180} marginSize={2} bgColor="#ffffff" />
             <p>Scan with any UPI app, or pay to <strong>{meta.upi_id}</strong></p>

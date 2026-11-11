@@ -63,6 +63,12 @@ class DriverLocationService extends ChangeNotifier {
     notifyListeners();
     _sub = Geolocator.getPositionStream(locationSettings: _settings()).listen(
       (p) {
+        // A rough network fix right after a good GPS one would make the car jump: skip it.
+        final prev = position;
+        if (p.accuracy > 150 && prev != null && prev.accuracy <= 150 &&
+            DateTime.now().difference(prev.timestamp) < const Duration(seconds: 20)) {
+          return;
+        }
         position = p;
         gps = GpsState.live;
         notifyListeners();
@@ -78,9 +84,9 @@ class DriverLocationService extends ChangeNotifier {
   LocationSettings _settings() {
     if (defaultTargetPlatform == TargetPlatform.android) {
       return AndroidSettings(
-        accuracy: LocationAccuracy.high,
+        accuracy: LocationAccuracy.bestForNavigation,
         distanceFilter: 0,
-        intervalDuration: const Duration(seconds: 3),
+        intervalDuration: const Duration(seconds: 2),
         foregroundNotificationConfig: const ForegroundNotificationConfig(
           notificationTitle: 'Turbo Driver is sharing your location',
           notificationText: 'Riders see your position during rides you accept.',
@@ -90,7 +96,7 @@ class DriverLocationService extends ChangeNotifier {
     }
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       return AppleSettings(
-        accuracy: LocationAccuracy.high,
+        accuracy: LocationAccuracy.bestForNavigation,
         activityType: ActivityType.automotiveNavigation,
         distanceFilter: 0,
         pauseLocationUpdatesAutomatically: false,

@@ -12,15 +12,30 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  // Login/register return {otp_required, challenge, email} when an emailed code is needed,
+  // otherwise tokens. Callers get {pending} or {user}.
+  const finish = useCallback((data) => (data.otp_required ? { pending: data } : { user: saveSession(data) }), [saveSession]);
+
   const login = useCallback(
     async (email, password, role) =>
-      saveSession(await api('/auth/login/', { method: 'POST', body: { email, password, role }, auth: false })),
-    [saveSession],
+      finish(await api('/auth/login/', { method: 'POST', body: { email, password, role }, auth: false })),
+    [finish],
   );
 
   const register = useCallback(
-    async (fields) => saveSession(await api('/auth/register/', { method: 'POST', body: fields, auth: false })),
+    async (fields) => finish(await api('/auth/register/', { method: 'POST', body: fields, auth: false })),
+    [finish],
+  );
+
+  const verifyEmail = useCallback(
+    async (challenge, code) =>
+      saveSession(await api('/auth/verify-email/', { method: 'POST', body: { challenge, code }, auth: false })),
     [saveSession],
+  );
+
+  const resendCode = useCallback(
+    (challenge) => api('/auth/resend-code/', { method: 'POST', body: { challenge }, auth: false }),
+    [],
   );
 
   const logout = useCallback(async () => {
@@ -44,8 +59,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, login, register, logout, updateUser }),
-    [user, login, register, logout, updateUser],
+    () => ({ user, login, register, verifyEmail, resendCode, logout, updateUser }),
+    [user, login, register, verifyEmail, resendCode, logout, updateUser],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

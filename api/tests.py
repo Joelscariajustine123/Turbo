@@ -2,7 +2,7 @@ from django.core.cache import cache
 from rest_framework.test import APITestCase
 
 from account.models import CustomUser
-from account.tests import PASSWORD, make_user
+from account.tests import PASSWORD, code_from_mail, make_user
 from driverpages.models import Earning, Rating
 from riderpages import otp as otp_service
 from riderpages.models import ContactMessage, Ride
@@ -20,19 +20,49 @@ class ApiTestCase(APITestCase):
             body['role'] = role
         resp = self.client.post('/api/auth/login/', body, format='json')
         self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertTrue(resp.data['otp_required'])  # password alone never gives tokens
+        self.assertNotIn('access', resp.data)
+        resp = self.client.post('/api/auth/verify-email/', {'challenge': resp.data['challenge'],
+                                                             'code': code_from_mail()}, format='json')
+        self.assertEqual(resp.status_code, 200, resp.content)
+        from account.models import EmailOTP
+        EmailOTP.objects.all().delete()  # so the next login in the same test isn't rate-limited
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {resp.data['access']}")
         return resp.data
 
 
 class AuthApiTests(ApiTestCase):
-    def test_register_returns_tokens(self):
+    def test_register_then_verify_email_gives_tokens(self):
         resp = self.client.post('/api/auth/register/', {
             'role': 'driver', 'full_name': 'D', 'username': 'd1', 'email': 'd1@example.com',
             'password': PASSWORD, 'phone': '9876543210'}, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
+        self.assertEqual((resp.data['otp_required'], resp.data['purpose']), (True, 'register'))
+        self.assertEqual(resp.data['email'], 'd•@example.com')
+        challenge = resp.data['challenge']
+        bad = self.client.post('/api/auth/verify-email/', {'challenge': challenge, 'code': '12'}, format='json')
+        self.assertEqual(bad.status_code, 400)
+        resp = self.client.post('/api/auth/verify-email/', {'challenge': challenge, 'code': code_from_mail()},
+                                format='json')
         self.assertEqual(resp.data['user']['role'], 'driver')
+        self.assertTrue(resp.data['user']['email_verified'])
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {resp.data['access']}")
         self.assertEqual(self.client.get('/api/driver/profile/').status_code, 200)
+
+    def test_bad_challenge_and_resend_cooldown(self):
+        make_user('rider')
+        resp = self.client.post('/api/auth/verify-email/', {'challenge': 'forged', 'code': '123456'}, format='json')
+        self.assertEqual(resp.status_code, 400)
+        resp = self.client.post('/api/auth/login/', {'email': 'rider@example.com', 'password': PASSWORD}, format='json')
+        again = self.client.post('/api/auth/resend-code/', {'challenge': resp.data['challenge']}, format='json')
+        self.assertEqual(again.status_code, 400)
+        self.assertIn('wait', again.data['detail'])
+
+    def test_changing_email_requires_verifying_again(self):
+        make_user('rider')
+        self.login('rider@example.com')
+        resp = self.client.patch('/api/auth/me/', {'email': 'new.address@example.com'}, format='json')
+        self.assertFalse(resp.data['email_verified'])
 
     def test_register_cannot_create_admin(self):
         resp = self.client.post('/api/auth/register/', {
@@ -110,10 +140,12 @@ class RideFlowApiTests(ApiTestCase):
         self.assertEqual(resp.data['fare'], quote['fares']['suv'])
         self.assertTrue(resp.data['can_cancel'])
 
-        resp = self.client.post(f'/api/rider/rides/{ride_id}/pay/', {'payment_method': 'upi'}, format='json')
-        self.assertEqual(resp.status_code, 400)
-        resp = self.client.post(f'/api/rider/rides/{ride_id}/pay/', {'payment_method': 'cash'}, format='json')
+        # Booked rides go straight to drivers; paying only happens after the ride.
         self.assertEqual(resp.data['status'], 'CONFIRMED')
+        self.assertEqual(resp.data['payment_status'], 'UNPAID')
+        resp = self.client.post(f'/api/rider/rides/{ride_id}/pay/', {'payment_method': 'cash'}, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('once your ride is completed', resp.data['detail'])
 
         # Driver: sees it without rider phone, accepts, then completes
         self.login('driver@example.com', 'driver')
@@ -129,12 +161,20 @@ class RideFlowApiTests(ApiTestCase):
 
         # A ride can't be completed until the passenger's OTP is verified.
         self.assertEqual(self.client.post(f'/api/driver/rides/{ride_id}/complete/').status_code, 400)
+        loc = {'accuracy': 8, 'speed': 20, 'heading': 90}
+        self.client.post('/api/driver/location/update/', {'latitude': COORDS['pickup_lat'],
+                                                          'longitude': COORDS['pickup_lng'], **loc}, format='json')
+        resp = self.client.post('/api/driver/ride/status/', {'ride_id': ride_id, 'status': 'ARRIVED'}, format='json')
+        self.assertEqual(resp.status_code, 200, resp.content)
         code = otp_service.for_rider(Ride.objects.get(pk=ride_id)).code
         resp = self.client.post('/api/driver/ride/verify-otp/', {'ride_id': ride_id, 'otp': code}, format='json')
         self.assertEqual(resp.status_code, 200, resp.content)
 
+        self.client.post('/api/driver/location/update/', {'latitude': COORDS['drop_lat'],
+                                                          'longitude': COORDS['drop_lng'], **loc}, format='json')
         resp = self.client.post(f'/api/driver/rides/{ride_id}/complete/')
         self.assertEqual(resp.data['status'], 'COMPLETED')
+        self.assertTrue(resp.data['needs_payment'])
         earnings = self.client.get('/api/driver/earnings/').data
         self.assertEqual(earnings['total_earnings'], quote['fares']['suv'])
         self.assertEqual(len(earnings['recent']), 1)
@@ -144,6 +184,12 @@ class RideFlowApiTests(ApiTestCase):
         ride = self.client.get(f'/api/rider/rides/{ride_id}/').data
         self.assertEqual(ride['driver']['phone'], '9876543210')
         self.assertFalse(ride['can_cancel'])
+        # Pay after the ride, by UPI.
+        resp = self.client.post(f'/api/rider/rides/{ride_id}/pay/', {'payment_method': 'upi', 'transaction_id': 'T1'},
+                                format='json')
+        self.assertEqual((resp.data['payment_status'], resp.data['payment_method']), ('PAID', 'UPI'))
+        self.assertEqual(self.client.post(f'/api/rider/rides/{ride_id}/pay/', {'payment_method': 'cash'},
+                                          format='json').status_code, 400)
         resp = self.client.post(f'/api/rider/rides/{ride_id}/rate/', {'rating': 5}, format='json')
         self.assertEqual(resp.data['rating'], 5)
         self.assertEqual(self.client.post(f'/api/rider/rides/{ride_id}/rate/', {'rating': 4},

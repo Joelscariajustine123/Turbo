@@ -90,6 +90,8 @@ class Ride {
     required this.rider,
     required this.canCancel,
     this.otpVerified = false,
+    this.paymentStatus = 'UNPAID',
+    this.needsPayment = false,
     this.pickupLat,
     this.pickupLng,
     this.dropLat,
@@ -125,6 +127,8 @@ class Ride {
         rating: toDoubleOrNull(j['rating']),
         canCancel: j['can_cancel'] == true,
         otpVerified: j['otp_verified'] == true,
+        paymentStatus: (j['payment_status'] as String?) ?? 'UNPAID',
+        needsPayment: j['needs_payment'] == true,
       );
 
   final int id;
@@ -149,6 +153,8 @@ class Ride {
   final double? rating;
   final bool canCancel;
   final bool otpVerified;
+  final String paymentStatus; // UNPAID | CASH_DUE | PAID
+  final bool needsPayment;
 
   bool get isActive => const ['PENDING', 'CONFIRMED', 'ACCEPTED', 'ARRIVED', 'IN_PROGRESS'].contains(status);
 

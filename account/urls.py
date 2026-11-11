@@ -12,4 +12,5 @@ urlpatterns = [
     path('driversignup/', views.driversignup, name='driver_signup'),
     path('ridersignup/', views.ridersignup, name='rider_signup'),
     path('logout/', views.logout_view, name='logout'),
+    path('verify-email/', views.verify_email, name='verify_email'),
 ]

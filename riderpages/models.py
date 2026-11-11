@@ -32,6 +32,14 @@ PAYMENT_METHOD_CHOICES = (
     ("UPI", "UPI"),
     ("CASH", "Cash"),
 )
+# The rider pays after the ride is completed (like Uber):
+#   UNPAID -> PAID (UPI with transaction id)
+#   UNPAID -> CASH_DUE (rider chose cash) -> PAID (driver confirms cash collected)
+PAYMENT_STATUS_CHOICES = (
+    ("UNPAID", "Unpaid"),
+    ("CASH_DUE", "Cash due"),
+    ("PAID", "Paid"),
+)
 
 # Fare = BASE_FARE + distance_km * rate. Kept server-side so the price can't be
 # edited in the browser; map.html shows the same numbers for the estimate.
@@ -75,6 +83,8 @@ class Ride(models.Model):
         null=True, 
         blank=True
     )
+    payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='UNPAID', db_index=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
     # Status and Timestamps
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
     otp_verified = models.BooleanField(default=False)

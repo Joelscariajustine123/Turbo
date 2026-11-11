@@ -8,8 +8,8 @@ from riderpages.models import ContactMessage, Ride
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'full_name', 'phone', 'role', 'is_active', 'date_joined']
-        read_only_fields = ['id', 'username', 'role', 'is_active', 'date_joined']
+        fields = ['id', 'username', 'email', 'full_name', 'phone', 'role', 'is_active', 'email_verified', 'date_joined']
+        read_only_fields = ['id', 'username', 'role', 'is_active', 'email_verified', 'date_joined']
 
     def validate_email(self, value):
         value = value.strip().lower()
@@ -30,7 +30,7 @@ class UserSerializer(serializers.ModelSerializer):
 class AdminUserSerializer(UserSerializer):
     """Admins may also activate / deactivate accounts."""
     class Meta(UserSerializer.Meta):
-        read_only_fields = ['id', 'username', 'role', 'date_joined']
+        read_only_fields = ['id', 'username', 'role', 'email_verified', 'date_joined']
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -82,6 +82,8 @@ class RideSerializer(serializers.ModelSerializer):
     car_type_display = serializers.CharField(source='get_car_type_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     payment_method_display = serializers.CharField(source='get_payment_method_display', read_only=True)
+    payment_status_display = serializers.CharField(source='get_payment_status_display', read_only=True)
+    needs_payment = serializers.SerializerMethodField()
     rider = serializers.SerializerMethodField()
     driver = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
@@ -92,6 +94,7 @@ class RideSerializer(serializers.ModelSerializer):
         fields = ['id', 'pickup_location', 'drop_location', 'pickup_lat', 'pickup_lng', 'drop_lat', 'drop_lng',
                   'car_type', 'car_type_display', 'distance', 'fare', 'status', 'status_display',
                   'payment_method', 'payment_method_display', 'transaction_id', 'otp_verified',
+                  'payment_status', 'payment_status_display', 'needs_payment', 'paid_at',
                   'accepted_at', 'arrived_at', 'started_at', 'completed_at',
                   'created_at', 'updated_at', 'rider', 'driver', 'rating', 'can_cancel']
         read_only_fields = fields
@@ -122,6 +125,9 @@ class RideSerializer(serializers.ModelSerializer):
     def get_rating(self, ride):
         ratings = list(ride.rating_set.all())  # uses prefetch_related('rating_set')
         return ratings[0].rating if ratings else None
+
+    def get_needs_payment(self, ride):
+        return ride.status == 'COMPLETED' and ride.payment_status == 'UNPAID'
 
     def get_can_cancel(self, ride):
         return ride.status in ('PENDING', 'CONFIRMED')

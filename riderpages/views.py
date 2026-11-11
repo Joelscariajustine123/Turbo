@@ -82,7 +82,8 @@ def map_view(request):
         except ValidationError as exc:
             messages.error(request, exc.messages[0])
         else:
-            return redirect('riderpages:booking_confirmation', ride_id=ride.id)
+            messages.success(request, "Ride booked! We're finding you a driver — you'll pay after the ride.")
+            return redirect('riderpages:track_ride', ride_id=ride.id)
 
     return render(request, 'riderpages/map.html', {'base_fare': BASE_FARE, 'rates': RATE_PER_KM})
 
@@ -92,21 +93,23 @@ def booking_confirmation(request, ride_id):
     ride = get_object_or_404(Ride, id=ride_id, user=request.user)
 
     if request.method == 'POST':
+        was_pending = ride.status == 'PENDING'
         try:
             services.confirm_payment(ride, request.POST.get('payment_method'), request.POST.get('transaction_id'))
         except ValidationError as exc:
             messages.error(request, exc.messages[0])
-            if ride.status != 'PENDING':
-                return redirect('riderpages:my_rides')
         else:
-            messages.success(
-                request,
-                f"Your ride has been confirmed! Payment method: {ride.get_payment_method_display()}. "
-                "We're finding you a driver — you can follow them live here.",
-            )
-            return redirect('riderpages:track_ride', ride_id=ride.id)
+            if was_pending:
+                messages.success(request, "Your ride is confirmed. We're finding you a driver.")
+            elif ride.payment_status == 'PAID':
+                messages.success(request, "Payment received — thank you for riding with Turbo!")
+            else:
+                messages.success(request, "Please pay the driver in cash. They'll confirm once they've received it.")
+            return redirect('riderpages:booking_confirmation', ride_id=ride.id)
 
-    return render(request, 'riderpages/booking_confirmation.html', {'ride': ride, 'upi_id': settings.UPI_ID})
+    can_pay = ride.status == 'PENDING' or (ride.status == 'COMPLETED' and ride.payment_status == 'UNPAID')
+    return render(request, 'riderpages/booking_confirmation.html',
+                  {'ride': ride, 'upi_id': settings.UPI_ID, 'can_pay': can_pay})
 
 
 @rider_required

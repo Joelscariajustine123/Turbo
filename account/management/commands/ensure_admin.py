@@ -34,7 +34,8 @@ class Command(BaseCommand):
             elif reset:
                 existing.set_password(password)
                 existing.is_active = True
-                existing.save(update_fields=['password', 'is_active'])
+                existing.email_verified = True
+                existing.save(update_fields=['password', 'is_active', 'email_verified'])
                 self.stdout.write(self.style.SUCCESS(
                     f'ensure_admin: password reset for {email}. Remove TURBO_ADMIN_RESET now.'))
             else:
@@ -57,5 +58,6 @@ class Command(BaseCommand):
             role='admin',
             is_staff=True,
             is_superuser=True,
+            email_verified=True,  # the owner set this address themselves
         )
         self.stdout.write(self.style.SUCCESS(f'ensure_admin: created admin {email}.'))

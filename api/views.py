@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from account import email_otp
 from account.models import CustomUser
 from account.services import register_user
 from adminpages import services as admin_services
@@ -30,6 +31,19 @@ from riderpages.pricing import all_fares
 
 from . import serializers as s
 from .permissions import IsAdminRole, IsDriver, IsRider
+
+
+def _email_challenge(user, status_code=status.HTTP_200_OK):
+    """Email a code and tell the client to collect it (no tokens yet)."""
+    purpose = email_otp.purpose_for(user)
+    email_otp.send_code(user, purpose)
+    return Response({
+        'otp_required': True,
+        'challenge': email_otp.make_challenge(user, purpose),
+        'purpose': purpose,
+        'email': email_otp.mask_email(user.email),
+        'detail': f"We sent a 6-digit code to {email_otp.mask_email(user.email)}.",
+    }, status=status_code)
 
 
 def _tokens_for(user):
@@ -68,6 +82,8 @@ class RegisterView(APIView):
         ser = s.RegisterSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         user = register_user(**ser.validated_data)
+        if email_otp.enabled():
+            return _email_challenge(user, status.HTTP_201_CREATED)
         return Response(_tokens_for(user), status=status.HTTP_201_CREATED)
 
 
@@ -87,7 +103,35 @@ class LoginView(APIView):
         user = authenticate(request, email=data['email'], password=data['password'])
         if user is None or (data.get('role') and user.role != data['role']):
             return Response({'detail': 'Invalid email or password.'}, status=status.HTTP_401_UNAUTHORIZED)
+        if email_otp.enabled():
+            return _email_challenge(user)
         return Response(_tokens_for(user))
+
+
+class VerifyEmailOTPView(APIView):
+    """POST {challenge, code} -> {access, refresh, user}. Finishes register or login."""
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def post(self, request):
+        user, purpose = email_otp.read_challenge(request.data.get('challenge'))
+        email_otp.verify_code(user, purpose, request.data.get('code'))
+        user.refresh_from_db()
+        return Response(_tokens_for(user))
+
+
+class ResendEmailOTPView(APIView):
+    """POST {challenge} -> a new code is emailed (max once a minute)."""
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def post(self, request):
+        user, purpose = email_otp.read_challenge(request.data.get('challenge'))
+        email_otp.send_code(user, purpose)
+        return Response({'detail': f"A new code was sent to {email_otp.mask_email(user.email)}.",
+                         'email': email_otp.mask_email(user.email)})
 
 
 class LogoutView(APIView):
@@ -108,8 +152,13 @@ class MeView(APIView):
     def patch(self, request):
         ser = s.UserSerializer(request.user, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
-        ser.save()
-        return Response(ser.data)
+        old_email = request.user.email
+        user = ser.save()
+        if user.email != old_email:
+            # A new address must be confirmed (by code) at the next login.
+            CustomUser.objects.filter(pk=user.pk).update(email_verified=False)
+            user.email_verified = False
+        return Response(s.UserSerializer(user).data)
 
 
 class ChangePasswordView(APIView):
@@ -248,6 +297,16 @@ class DriverRideViewSet(viewsets.GenericViewSet):
     @action(detail=False)
     def history(self, request):
         return self._list(driver_services.ride_history(self._driver()))
+
+    @action(detail=False)
+    def unpaid(self, request):
+        """Completed rides still waiting for payment (e.g. cash to collect)."""
+        return self._list(driver_services.unpaid_rides(self._driver()))
+
+    @action(detail=True, methods=['post'], url_path='cash-collected')
+    def cash_collected(self, request, pk=None):
+        ride = driver_services.collect_cash(self._driver(), int(pk))
+        return self._one(ride.pk)
 
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):

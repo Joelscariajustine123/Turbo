@@ -27,7 +27,7 @@
     state.gps = 'waiting';
     renderStatus();
     state.watchId = navigator.geolocation.watchPosition(onFix, onGpsError,
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
   }
 
   function stopGps() {
@@ -38,6 +38,9 @@
 
   function onFix(pos) {
     var c = pos.coords;
+    // A rough Wi-Fi/cell fix right after a good GPS one would make the car jump: skip it.
+    if (c.accuracy > 150 && state.fix && state.fix.accuracy != null && state.fix.accuracy <= 150 &&
+        Date.now() - state.fixAt < 20000) return;
     state.fix = {
       latitude: +c.latitude.toFixed(6), longitude: +c.longitude.toFixed(6),
       accuracy: c.accuracy != null ? Math.round(c.accuracy) : null,
@@ -168,7 +171,7 @@
       var fare = state.ride.fare, method = state.ride.payment_method_display;
       rideAction('/driver/ride/status/', { ride_id: id, status: 'COMPLETED' })
         .then(function () {
-          Trk.toast('Ride completed. ₹' + Number(fare || 0).toFixed(2) + ' earned' + (method ? ' (' + method + ')' : '') + '.', 'success');
+          Trk.toast('Ride completed. ₹' + Number(fare || 0).toFixed(2) + ' — the rider now pays by UPI or cash (confirm cash on your dashboard).', 'success');
           ['pickup', 'drop'].forEach(function (k) { map && map.removeMarker(k); });
           ['route', 'trip'].forEach(function (k) { map && map.removeRoute(k); });
         })
@@ -262,21 +265,32 @@
     var target = tr.stage === 'pickup' ? tr.pickup : tr.drop;
     var nav = target ? Trk.esc(TurboMap.navigateUrl(state.fix && { lat: state.fix.latitude, lng: state.fix.longitude }, target)) : '';
     var actions = '';
+    var g = tr.geofence || {};
+    var lockText = function (place) {
+      if (g.reason === 'imprecise') return 'GPS not precise enough (±' + Math.round(g.accuracy_m || 0) + ' m)';
+      if (g.reason === 'stale' || g.reason === 'no_gps') return 'Waiting for a fresh GPS fix';
+      return (g.distance_m != null ? Trk.km(g.distance_m / 1000) + ' away · ' : '') + 'unlocks within ' + (g.radius_m || 50) + ' m of the ' + place;
+    };
     if (tr.status === 'ACCEPTED') {
-      actions = '<div class="trk-actions two"><button class="trk-btn ghost" data-act="arrived"><i class="bx bx-flag"></i>I\'ve arrived</button>' +
-        '<button class="trk-btn primary" data-act="otp"><i class="bx bx-key"></i>Verify OTP</button></div>';
+      actions = g.within
+        ? '<button class="trk-btn primary block" data-act="arrived"><i class="bx bx-flag"></i>I\'ve arrived</button>'
+        : '<button class="trk-btn ghost block" disabled><i class="bx bx-lock-alt"></i>I\'ve arrived — ' + esc(lockText('pickup')) + '</button>';
     } else if (tr.status === 'ARRIVED') {
       actions = '<button class="trk-btn primary block" data-act="otp"><i class="bx bx-key"></i>Verify passenger OTP</button>';
     } else if (tr.status === 'IN_PROGRESS') {
-      actions = '<button class="trk-btn success block" data-act="complete"><i class="bx bx-check-circle"></i>Complete ride</button>';
+      actions = g.within
+        ? '<button class="trk-btn success block" data-act="complete"><i class="bx bx-check-circle"></i>Complete ride</button>'
+        : '<button class="trk-btn ghost block" disabled><i class="bx bx-lock-alt"></i>Complete — ' + esc(lockText('destination')) + '</button>';
     }
-    var hint = tr.near_target && tr.status === 'ACCEPTED'
-      ? '<div class="trk-banner info"><i class="bx bx-map-pin"></i><span>You\'re at the pickup. Tap "I\'ve arrived" and ask the rider for their OTP.</span></div>' : '';
+    var hint = g.within && tr.status === 'ACCEPTED'
+      ? '<div class="trk-banner info"><i class="bx bx-map-pin"></i><span>You\'re at the pickup. Tap "I\'ve arrived", then ask the rider for their OTP.</span></div>'
+      : g.within && tr.status === 'IN_PROGRESS'
+        ? '<div class="trk-banner info"><i class="bx bx-flag"></i><span>You\'ve reached the destination. Tap "Complete ride".</span></div>' : '';
     var dist = tr.stage === 'pickup' ? tr.distance_to_pickup_km : tr.distance_to_destination_km;
 
     box.innerHTML =
       '<div class="trk-stage"><strong>' + esc(tr.stage_label) + '</strong><span class="trk-small">Ride #' + r.id + ' · ' + esc(r.car_type_display) +
-        ' · ₹' + Number(r.fare || 0).toFixed(2) + (r.payment_method_display ? ' · ' + esc(r.payment_method_display) : '') + '</span></div>' +
+        ' · ₹' + Number(r.fare || 0).toFixed(2) + ' · paid after the ride</span></div>' +
       '<div class="trk-steps">' + steps + '</div>' + hint +
       '<div class="trk-metrics">' +
         '<div class="trk-metric"><span>' + (tr.stage === 'pickup' ? 'To pickup' : 'To drop') + '</span><strong>' + Trk.km(dist) + '</strong></div>' +

@@ -12,7 +12,9 @@ from riderpages import otp as otp_service
 from riderpages.models import OTPAttempt, Ride, RideOTP
 
 KANNUR = {'pickup_lat': 11.8745, 'pickup_lng': 75.3704, 'drop_lat': 11.95, 'drop_lng': 75.42}
-NEAR_PICKUP = {'latitude': 11.8800, 'longitude': 75.3650, 'accuracy': 8, 'speed': 22, 'heading': 135}
+NEAR_PICKUP = {'latitude': 11.8800, 'longitude': 75.3650, 'accuracy': 8, 'speed': 22, 'heading': 135}  # ~850 m away
+AT_PICKUP = {'latitude': 11.87470, 'longitude': 75.37060, 'accuracy': 6}   # ~30 m from the pickup
+AT_DROP = {'latitude': 11.95020, 'longitude': 75.42010, 'accuracy': 6}     # ~25 m from the drop
 
 
 class TrackingTestCase(APITestCase):
@@ -44,6 +46,27 @@ class TrackingTestCase(APITestCase):
     def send_location(self, **overrides):
         self.as_user(self.driver_user)
         return self.client.post('/api/driver/location/update/', {**NEAR_PICKUP, **overrides}, format='json')
+
+    def arrive(self):
+        """Drive to the pickup and tap Arrived."""
+        self.send_location(**AT_PICKUP)
+        resp = self.client.post('/api/driver/ride/status/', {'ride_id': self.ride.id, 'status': 'ARRIVED'}, format='json')
+        self.assertEqual(resp.status_code, 200, resp.content)
+        return resp
+
+    def start_ride(self):
+        self.arrive()
+        resp = self.client.post('/api/driver/ride/verify-otp/', {'ride_id': self.ride.id, 'otp': self.code()},
+                                format='json')
+        self.assertEqual(resp.status_code, 200, resp.content)
+        return resp
+
+    def finish_ride(self):
+        self.send_location(**AT_DROP)
+        resp = self.client.post('/api/driver/ride/status/', {'ride_id': self.ride.id, 'status': 'COMPLETED'},
+                                format='json')
+        self.assertEqual(resp.status_code, 200, resp.content)
+        return resp
 
 
 class DriverLocationTests(TrackingTestCase):
@@ -134,9 +157,8 @@ class RiderTrackingTests(TrackingTestCase):
 
     def test_tracking_stops_after_completion(self):
         self.accept()
-        self.send_location()
-        self.client.post('/api/driver/ride/verify-otp/', {'ride_id': self.ride.id, 'otp': self.code()}, format='json')
-        self.client.post('/api/driver/ride/status/', {'ride_id': self.ride.id, 'status': 'COMPLETED'}, format='json')
+        self.start_ride()
+        self.finish_ride()
         self.as_user(self.rider)
         data = self.client.get(f'/api/rider/ride/tracking/?ride_id={self.ride.id}').data
         self.assertEqual(data['status'], 'COMPLETED')
@@ -147,9 +169,7 @@ class RiderTrackingTests(TrackingTestCase):
 
     def test_destination_stage_after_otp(self):
         self.accept()
-        self.send_location()
-        resp = self.client.post('/api/driver/ride/verify-otp/', {'ride_id': self.ride.id, 'otp': self.code()},
-                                format='json')
+        resp = self.start_ride()
         self.assertEqual(resp.data['tracking']['stage'], 'destination')
         resp = self.send_location(latitude=11.9, longitude=75.39)
         self.assertEqual(resp.data['tracking']['stage'], 'destination')
@@ -176,11 +196,19 @@ class OTPTests(TrackingTestCase):
         self.as_user(self.driver_user)
         self.assertEqual(self.client.get('/api/rider/ride/otp/').status_code, 403)
 
+    def test_otp_only_after_arrival(self):
+        self.accept()
+        resp = self.client.post('/api/driver/ride/verify-otp/', {'ride_id': self.ride.id, 'otp': self.code()},
+                                format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('Arrived', resp.data['detail'])
+
     def test_valid_otp_starts_ride_and_cannot_be_reused(self):
         self.accept()
-        code = self.code()
-        self.client.post('/api/driver/ride/status/', {'ride_id': self.ride.id, 'status': 'ARRIVED'}, format='json')
+        first = self.code()
+        self.arrive()
         code = self.code()  # arriving issues a fresh code
+        self.assertNotEqual(first, code)
         resp = self.client.post('/api/driver/ride/verify-otp/', {'ride_id': self.ride.id, 'otp': code}, format='json')
         self.assertEqual(resp.status_code, 200, resp.content)
         self.ride.refresh_from_db()
@@ -193,6 +221,7 @@ class OTPTests(TrackingTestCase):
 
     def test_wrong_codes_count_down_then_lock(self):
         self.accept()
+        self.arrive()
         good = self.code()
         bad = '000000' if good != '000000' else '111111'
         for left in (4, 3, 2, 1):
@@ -208,6 +237,7 @@ class OTPTests(TrackingTestCase):
 
     def test_expired_code_rejected(self):
         self.accept()
+        self.arrive()
         code = self.code()
         RideOTP.objects.filter(ride=self.ride).update(expires_at=timezone.now() - timedelta(seconds=1))
         resp = self.client.post('/api/driver/ride/verify-otp/', {'ride_id': self.ride.id, 'otp': code}, format='json')
@@ -217,6 +247,7 @@ class OTPTests(TrackingTestCase):
 
     def test_regenerate_invalidates_old_code(self):
         self.accept()
+        self.arrive()
         old = self.code()
         RideOTP.objects.filter(ride=self.ride).update(created_at=timezone.now() - timedelta(minutes=1))
         self.as_user(self.rider)
@@ -252,11 +283,13 @@ class StatusWorkflowTests(TrackingTestCase):
 
     def test_only_valid_transitions(self):
         self.accept()
+        self.send_location(**AT_PICKUP)
         self.assertEqual(self.status('IN_PROGRESS').status_code, 400)   # needs OTP
         self.assertEqual(self.status('COMPLETED').status_code, 400)     # not started
         self.assertEqual(self.status('ARRIVED').data['ride']['status'], 'ARRIVED')
         self.assertEqual(self.status('ARRIVED').status_code, 400)       # already arrived
         self.client.post('/api/driver/ride/verify-otp/', {'ride_id': self.ride.id, 'otp': self.code()}, format='json')
+        self.send_location(**AT_DROP)
         self.assertEqual(self.status('COMPLETED').data['ride']['status'], 'COMPLETED')
         self.ride.refresh_from_db()
         self.assertIsNotNone(self.ride.completed_at)
@@ -286,12 +319,22 @@ class TrackingPagesTests(TrackingTestCase):
         self.client.login(email='other.rider@example.com', password=PASSWORD)
         self.assertEqual(self.client.get(reverse('riderpages:track_ride', args=[self.ride.id])).status_code, 404)
 
-    def test_payment_redirects_to_tracking(self):
+    def test_booking_goes_to_tracking_and_payment_comes_after(self):
         from django.urls import reverse
-        Ride.objects.filter(pk=self.ride.pk).update(status='PENDING', payment_method=None)
+        self.client.force_authenticate(None)
         self.client.login(email='rider@example.com', password=PASSWORD)
-        resp = self.client.post(reverse('riderpages:booking_confirmation', args=[self.ride.id]), {'payment_method': 'cash'})
-        self.assertRedirects(resp, reverse('riderpages:track_ride', args=[self.ride.id]))
+        resp = self.client.post(reverse('riderpages:map_view'), {'pickup': 'A', 'drop': 'B', 'car': 'sedan', **KANNUR})
+        new = Ride.objects.exclude(pk=self.ride.pk).get()
+        self.assertEqual(new.status, 'CONFIRMED')
+        self.assertRedirects(resp, reverse('riderpages:track_ride', args=[new.id]))
+        page = self.client.get(reverse('riderpages:booking_confirmation', args=[new.id]))
+        self.assertNotContains(page, 'Pay with cash')  # nothing to pay yet
+        Ride.objects.filter(pk=new.pk).update(status='COMPLETED')
+        page = self.client.get(reverse('riderpages:booking_confirmation', args=[new.id]))
+        self.assertContains(page, 'Pay for your ride')
+        resp = self.client.post(reverse('riderpages:booking_confirmation', args=[new.id]), {'payment_method': 'cash'})
+        self.assertRedirects(resp, reverse('riderpages:booking_confirmation', args=[new.id]))
+        self.assertEqual(Ride.objects.get(pk=new.pk).payment_status, 'CASH_DUE')
 
     def test_driver_live_page_and_accept_redirect(self):
         from django.urls import reverse
@@ -309,3 +352,102 @@ class TrackingPagesTests(TrackingTestCase):
         c.login(email='driver@example.com', password=PASSWORD)
         resp = c.post('/api/driver/location/update/', NEAR_PICKUP, content_type='application/json')
         self.assertEqual(resp.status_code, 403)  # no CSRF token
+
+
+
+class GeofenceTests(TrackingTestCase):
+    """'Arrived' and 'Complete' only within 50 m of the pickup / destination, using a fresh, precise fix."""
+
+    def status(self, value):
+        return self.client.post('/api/driver/ride/status/', {'ride_id': self.ride.id, 'status': value}, format='json')
+
+    def test_arrive_blocked_until_within_50_m(self):
+        self.accept()
+        self.send_location()  # ~850 m away
+        resp = self.status('ARRIVED')
+        self.assertEqual(resp.status_code, 400)
+        self.assertRegex(resp.data['detail'], r"You're \d+ m from the pickup point")
+        tr = self.client.get('/api/driver/active-ride/').data['tracking']
+        self.assertFalse(tr['geofence']['within'])
+        self.assertGreater(tr['geofence']['distance_m'], 50)
+
+        self.send_location(latitude=11.87505, longitude=75.37040, accuracy=10)  # ~60 m: still too far
+        self.assertEqual(self.status('ARRIVED').status_code, 400)
+        self.send_location(**AT_PICKUP)
+        tr = self.client.get('/api/driver/active-ride/').data['tracking']
+        self.assertTrue(tr['geofence']['within'])
+        self.assertLessEqual(tr['geofence']['distance_m'], 50)
+        self.assertEqual(self.status('ARRIVED').status_code, 200)
+
+    def test_complete_blocked_until_within_50_m_of_drop(self):
+        self.accept()
+        self.start_ride()
+        self.send_location(latitude=11.9480, longitude=75.4190, accuracy=8)  # ~250 m short
+        resp = self.status('COMPLETED')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('from the destination', resp.data['detail'])
+        self.finish_ride()
+
+    def test_stale_or_imprecise_gps_is_not_enough(self):
+        self.accept()
+        self.send_location(**{**AT_PICKUP, 'accuracy': 120})
+        resp = self.status('ARRIVED')
+        self.assertIn("isn't precise enough", resp.data['detail'])
+        self.send_location(**AT_PICKUP)
+        DriverLocation.objects.update(updated_at=timezone.now() - timedelta(minutes=2))
+        self.assertIn('too old', self.status('ARRIVED').data['detail'])
+
+    def test_rough_fix_does_not_replace_a_good_one(self):
+        self.send_location(**AT_PICKUP)
+        self.send_location(latitude=11.90, longitude=75.40, accuracy=900)   # a coarse network fix
+        loc = DriverLocation.objects.get()
+        self.assertAlmostEqual(float(loc.latitude), AT_PICKUP['latitude'], places=5)
+
+
+class PayAfterRideTests(TrackingTestCase):
+    def complete(self):
+        self.accept()
+        self.start_ride()
+        self.finish_ride()
+
+    def pay(self, **body):
+        self.as_user(self.rider)
+        return self.client.post(f'/api/rider/rides/{self.ride.id}/pay/', body, format='json')
+
+    def test_cash_then_driver_confirms(self):
+        self.assertEqual(self.pay(payment_method='cash').status_code, 400)  # not completed yet
+        self.complete()
+        resp = self.pay(payment_method='cash')
+        self.assertEqual(resp.data['payment_status'], 'CASH_DUE')
+        self.as_user(self.driver_user)
+        unpaid = self.client.get('/api/driver/rides/unpaid/').data['results']
+        self.assertEqual([r['id'] for r in unpaid], [self.ride.id])
+        resp = self.client.post(f'/api/driver/rides/{self.ride.id}/cash-collected/')
+        self.assertEqual((resp.data['payment_status'], resp.data['payment_method']), ('PAID', 'CASH'))
+        self.assertEqual(self.client.get('/api/driver/rides/unpaid/').data['count'], 0)
+
+    def test_upi_requires_transaction_id(self):
+        self.complete()
+        self.assertEqual(self.pay(payment_method='upi').status_code, 400)
+        resp = self.pay(payment_method='upi', transaction_id='412345678901')
+        self.assertEqual(resp.data['payment_status'], 'PAID')
+        self.assertIsNotNone(Ride.objects.get(pk=self.ride.pk).paid_at)
+
+    def test_other_driver_cannot_confirm_cash(self):
+        self.complete()
+        self.as_user(self.other_driver_user)
+        resp = self.client.post(f'/api/driver/rides/{self.ride.id}/cash-collected/')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(Ride.objects.get(pk=self.ride.pk).payment_status, 'UNPAID')
+
+
+class PrecisionTests(TrackingTestCase):
+    def test_remaining_distance_is_measured_along_the_route(self):
+        from driverpages.tracking import _remaining_along
+        # A 2-segment L-shaped route; driver halfway along the first leg.
+        route = [[11.8700, 75.3500], [11.8800, 75.3500], [11.8800, 75.3600]]
+        remaining, off = _remaining_along(route, 11.8750, 75.3500)
+        self.assertAlmostEqual(remaining, 0.556 + 1.090, delta=0.03)  # half of leg 1 + all of leg 2
+        self.assertLess(off, 0.005)
+        _, off = _remaining_along(route, 11.8750, 75.3520)  # ~220 m beside the road
+        self.assertAlmostEqual(off, 0.22, delta=0.02)

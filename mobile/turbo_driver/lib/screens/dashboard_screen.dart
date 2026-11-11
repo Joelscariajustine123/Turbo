@@ -18,6 +18,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   DriverProfile? _profile;
   List<Ride> _ongoing = const [];
   List<Ride> _available = const [];
+  List<Ride> _unpaid = const [];
   List<Choice> _availability = const [];
   String? _error;
   bool _loading = true;
@@ -53,6 +54,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _location?.removeListener(_onLocation);
     _location?.dispose();
     super.dispose();
+  }
+
+  // 50 m rule (checked again by the server): unlock when the latest fix is close enough.
+  bool _within(Ride r) => _location?.tracking?.rideId == r.id && (_location?.tracking?.withinRadius ?? false);
+  String _lock(Ride r, String place) =>
+      _location?.tracking?.rideId == r.id ? _location!.tracking!.lockText(place) : 'waiting for GPS';
+
+  Future<void> _collectCash(Ride ride) async {
+    if (!await confirmDialog(context, 'Cash collected?', 'Did you receive ${money(ride.fare)} in cash?', action: 'Yes')) return;
+    setState(() => _busyRide = ride.id);
+    try {
+      await _api.post('/driver/rides/${ride.id}/cash-collected/');
+      if (mounted) showSnack(context, 'Cash payment recorded.');
+    } catch (e) {
+      if (mounted) showSnack(context, errorText(e), error: true);
+    } finally {
+      await _load(quiet: true);
+      if (mounted) setState(() => _busyRide = null);
+    }
   }
 
   /// Share GPS whenever the driver is online; stop when offline.
@@ -93,6 +113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _api.get('/driver/rides/ongoing/'),
         _api.get('/driver/rides/available/'),
         auth.meta(),
+        _api.get('/driver/rides/unpaid/'),
       ]);
       if (!mounted) return;
       setState(() {
@@ -100,6 +121,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _ongoing = PageOf.fromJson(results[1], Ride.fromJson).results;
         _available = PageOf.fromJson(results[2], Ride.fromJson).results;
         _availability = (results[3] as Meta).availability;
+        _unpaid = PageOf.fromJson(results[4], Ride.fromJson).results;
         _error = null;
       });
       _syncTracking();
@@ -195,13 +217,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     actions: [
                       StatusChip(r.status, r.statusDisplay),
                       if (r.status == 'ACCEPTED')
-                        OutlinedButton(
-                          onPressed: _busyRide == null
-                              ? () => _statusAction(r, 'ARRIVED', "Marked as arrived. Ask the rider for their OTP.")
+                        FilledButton.icon(
+                          onPressed: _busyRide == null && _within(r)
+                              ? () => _statusAction(r, 'ARRIVED', 'Marked as arrived. Ask the rider for their OTP.')
                               : null,
-                          child: const Text("I've arrived"),
+                          icon: Icon(_within(r) ? Icons.flag : Icons.lock_outline),
+                          label: Text(_within(r) ? "I've arrived" : "I've arrived · ${_lock(r, 'pickup')}"),
                         ),
-                      if (r.status == 'ACCEPTED' || r.status == 'ARRIVED')
+                      if (r.status == 'ARRIVED')
                         FilledButton.icon(
                           onPressed: _busyRide == null ? () => _verifyOtp(r) : null,
                           icon: const Icon(Icons.key),
@@ -209,9 +232,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       if (r.status == 'IN_PROGRESS')
                         FilledButton.icon(
-                          onPressed: _busyRide == null ? () => _statusAction(r, 'COMPLETED', 'Ride completed. Earnings updated.') : null,
-                          icon: const Icon(Icons.flag),
-                          label: const Text('Complete ride'),
+                          onPressed: _busyRide == null && _within(r)
+                              ? () => _statusAction(r, 'COMPLETED', 'Ride completed. The rider now pays by UPI or cash.')
+                              : null,
+                          icon: Icon(_within(r) ? Icons.flag : Icons.lock_outline),
+                          label: Text(_within(r) ? 'Complete ride' : 'Complete · ${_lock(r, 'destination')}'),
                         ),
                     ],
                   ),
@@ -238,6 +263,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     const SizedBox(height: 8),
                   ],
+                ],
+                if (_unpaid.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _Header('Awaiting payment', _unpaid.length),
+                  for (final r in _unpaid)
+                    _RideCard(
+                      ride: r,
+                      busy: _busyRide == r.id,
+                      actions: [
+                        Text(r.paymentStatus == 'CASH_DUE' ? 'Rider chose cash' : "Rider hasn't paid yet",
+                            style: const TextStyle(color: Colors.white60)),
+                        FilledButton.icon(
+                          onPressed: _busyRide == null ? () => _collectCash(r) : null,
+                          icon: const Icon(Icons.payments_outlined),
+                          label: const Text('Cash collected'),
+                        ),
+                      ],
+                    ),
                 ],
                 const SizedBox(height: 12),
                 _Header('New requests', _available.length),

@@ -1,4 +1,7 @@
-from django.test import TestCase
+from unittest import mock
+
+from django.core import mail
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .models import CustomUser
@@ -7,11 +10,18 @@ PASSWORD = 'Str0ng-pass-123'
 
 
 def make_user(role, email=None, **extra):
+    """An existing, email-verified account (like every account created before email codes)."""
     email = email or f'{role}@example.com'
+    extra.setdefault('email_verified', True)
     return CustomUser.objects.create_user(
         username=email.split('@')[0], email=email, password=PASSWORD,
         full_name=f'{role.title()} User', role=role, **extra,
     )
+
+
+def code_from_mail():
+    """The 6-digit code from the latest email (subject: "123456 is your Turbo verification code")."""
+    return mail.outbox[-1].subject.split()[0]
 
 
 class SignupTests(TestCase):
@@ -23,15 +33,24 @@ class SignupTests(TestCase):
         data.update(overrides)
         return self.client.post(reverse(url_name), data)
 
-    def test_rider_signup_creates_rider_with_hashed_password(self):
+    def test_rider_signup_requires_email_code(self):
         resp = self.post_signup('account:rider_signup')
-        self.assertRedirects(resp, reverse('account:rider_login'))
+        self.assertRedirects(resp, reverse('account:verify_email'))
         user = CustomUser.objects.get(email='new@example.com')
         self.assertEqual(user.role, 'rider')
         self.assertTrue(user.check_password(PASSWORD))
+        self.assertFalse(user.email_verified)
+        self.assertEqual(mail.outbox[-1].to, ['new@example.com'])
+        resp = self.client.post(reverse('account:verify_email'), {'code': code_from_mail()})
+        self.assertRedirects(resp, reverse('riderpages:index'))
+        user.refresh_from_db()
+        self.assertTrue(user.email_verified)
+        self.assertIn('_auth_user_id', self.client.session)
 
     def test_admin_signup_closes_after_first_admin(self):
-        self.assertRedirects(self.post_signup('account:admin_signup'), reverse('account:admin_login'))
+        self.assertRedirects(self.post_signup('account:admin_signup'), reverse('account:verify_email'))
+        self.client.post(reverse('account:verify_email'), {'code': code_from_mail()})
+        self.client.logout()
         resp = self.post_signup('account:admin_signup', username='second', email='second@example.com')
         self.assertRedirects(resp, reverse('account:admin_login'))
         self.assertEqual(CustomUser.objects.filter(role='admin').count(), 1)
@@ -58,10 +77,59 @@ class SignupTests(TestCase):
 
 
 class LoginTests(TestCase):
-    def test_login_by_role(self):
+    def test_login_by_role_needs_emailed_code(self):
         make_user('driver')
         resp = self.client.post(reverse('account:driver_login'),
                                 {'email': 'DRIVER@example.com', 'password': PASSWORD})
+        self.assertRedirects(resp, reverse('account:verify_email'))
+        self.assertNotIn('_auth_user_id', self.client.session)  # not logged in yet
+        self.assertIn('log in', mail.outbox[-1].body)
+        resp = self.client.post(reverse('account:verify_email'), {'code': code_from_mail()})
+        self.assertRedirects(resp, reverse('driverpages:homepage'))
+
+    def test_wrong_code_counts_down_and_code_is_single_use(self):
+        make_user('rider')
+        self.client.post(reverse('account:rider_login'), {'email': 'rider@example.com', 'password': PASSWORD})
+        good = code_from_mail()
+        bad = '000000' if good != '000000' else '111111'
+        resp = self.client.post(reverse('account:verify_email'), {'code': bad}, follow=True)
+        self.assertContains(resp, '4 attempts left')
+        self.assertNotIn('_auth_user_id', self.client.session)
+        self.client.post(reverse('account:verify_email'), {'code': good})
+        self.assertIn('_auth_user_id', self.client.session)
+        self.client.logout()
+        # reusing the same code doesn't work
+        self.client.post(reverse('account:rider_login'), {'email': 'rider@example.com', 'password': PASSWORD})
+        from account.models import EmailOTP
+        EmailOTP.objects.update(created_at=EmailOTP.objects.first().created_at)
+        resp = self.client.post(reverse('account:verify_email'), {'code': good}, follow=True)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_resend_is_rate_limited(self):
+        make_user('rider')
+        self.client.post(reverse('account:rider_login'), {'email': 'rider@example.com', 'password': PASSWORD})
+        resp = self.client.post(reverse('account:verify_email'), {'action': 'resend'}, follow=True)
+        self.assertContains(resp, 'Please wait')
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_unverified_account_gets_registration_code_at_login(self):
+        make_user('rider', email_verified=False)
+        self.client.post(reverse('account:rider_login'), {'email': 'rider@example.com', 'password': PASSWORD})
+        self.assertIn('finish creating your Turbo account', mail.outbox[-1].body)
+        self.client.post(reverse('account:verify_email'), {'code': code_from_mail()})
+        self.assertTrue(CustomUser.objects.get(email='rider@example.com').email_verified)
+
+    def test_email_failure_shows_error_instead_of_crashing(self):
+        make_user('rider')
+        with mock.patch('account.email_otp.send_mail', side_effect=OSError('SMTP blocked')):
+            resp = self.client.post(reverse('account:rider_login'), {'email': 'rider@example.com', 'password': PASSWORD})
+        self.assertContains(resp, 'send the verification email right now')
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    @override_settings(EMAIL_OTP_ENABLED=False)
+    def test_codes_can_be_switched_off(self):
+        make_user('driver')
+        resp = self.client.post(reverse('account:driver_login'), {'email': 'driver@example.com', 'password': PASSWORD})
         self.assertRedirects(resp, reverse('driverpages:homepage'))
 
     def test_wrong_role_rejected(self):
@@ -73,13 +141,16 @@ class LoginTests(TestCase):
     def test_next_redirect_and_unsafe_next_ignored(self):
         make_user('rider')
         map_url = reverse('riderpages:map_view')
-        resp = self.client.post(reverse('account:rider_login') + f'?next={map_url}',
-                                {'email': 'rider@example.com', 'password': PASSWORD})
+        self.client.post(reverse('account:rider_login') + f'?next={map_url}',
+                         {'email': 'rider@example.com', 'password': PASSWORD})
+        resp = self.client.post(reverse('account:verify_email'), {'code': code_from_mail()})
         self.assertRedirects(resp, map_url)
         self.client.logout()
-        resp = self.client.post(reverse('account:rider_login'),
-                                {'email': 'rider@example.com', 'password': PASSWORD,
-                                 'next': 'https://evil.example.com/'})
+        from account.models import EmailOTP
+        EmailOTP.objects.all().delete()  # skip the resend cooldown
+        self.client.post(reverse('account:rider_login'),
+                         {'email': 'rider@example.com', 'password': PASSWORD, 'next': 'https://evil.example.com/'})
+        resp = self.client.post(reverse('account:verify_email'), {'code': code_from_mail()})
         self.assertRedirects(resp, reverse('riderpages:index'))
 
     def test_logout(self):
@@ -125,7 +196,9 @@ class EnsureAdminCommandTests(TestCase):
     def test_creates_admin_and_ignores_stray_whitespace(self):
         out = self.run_cmd(TURBO_ADMIN_EMAIL=' Admin@Turbo.com\n', TURBO_ADMIN_PASSWORD='admin@123\n')
         self.assertIn('created admin admin@turbo.com', out)
-        resp = self.client.post(reverse('account:admin_login'), {'email': 'admin@turbo.com', 'password': 'admin@123'})
+        self.assertTrue(CustomUser.objects.get(email='admin@turbo.com').email_verified)
+        self.client.post(reverse('account:admin_login'), {'email': 'admin@turbo.com', 'password': 'admin@123'})
+        resp = self.client.post(reverse('account:verify_email'), {'code': code_from_mail()})
         self.assertRedirects(resp, reverse('adminpages:home'))
 
     def test_does_nothing_twice_and_reset_changes_password(self):

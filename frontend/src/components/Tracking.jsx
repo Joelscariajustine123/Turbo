@@ -27,6 +27,8 @@ export function useDriverLocation(enabled, onTracking) {
     const watch = navigator.geolocation.watchPosition(
       (pos) => {
         const c = pos.coords;
+        const prev = fix.current;
+        if (c.accuracy > 150 && prev && prev.accuracy != null && prev.accuracy <= 150 && Date.now() - prev.at < 20000) return;
         fix.current = {
           latitude: +c.latitude.toFixed(6), longitude: +c.longitude.toFixed(6),
           accuracy: c.accuracy != null ? Math.round(c.accuracy) : null,
@@ -37,7 +39,7 @@ export function useDriverLocation(enabled, onTracking) {
         setGps('ok');
       },
       (err) => setGps(err.code === 1 ? 'denied' : err.code === 2 ? 'unavailable' : 'weak'),
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
     );
 
     let stopped = false;

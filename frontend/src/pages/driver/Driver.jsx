@@ -33,19 +33,29 @@ export function Dashboard() {
   const profile = useApi('/driver/profile/');
   const available = useApi('/driver/rides/available/', { pollMs: 10000 });
   const ongoing = useApi('/driver/rides/ongoing/', { pollMs: 10000 });
+  const unpaid = useApi('/driver/rides/unpaid/', { pollMs: 20000 });
   const { data: meta } = useApi('/meta/');
   const act = useAction();
   const [notice, setNotice] = useState('');
   const [otpFor, setOtpFor] = useState(null);
   const [tracking, setTracking] = useState(null);
 
-  const refresh = () => Promise.all([available.reload(true), ongoing.reload(true), profile.reload(true)]);
+  const refresh = () => Promise.all([available.reload(true), ongoing.reload(true), profile.reload(true), unpaid.reload(true)]);
   const status = profile.data?.availability_status;
   // Share GPS every 3 s whenever the driver is online (the rider sees it during a trip).
   const location = useDriverLocation(!!status && status !== 'offline', (data) => {
     setTracking(data.tracking);
     if ((data.tracking?.status || null) !== (ongoing.data?.results[0]?.status || null)) ongoing.reload(true);
   });
+
+  // 50 m rule: the server decides; buttons unlock when the latest GPS fix is close enough.
+  const geo = (r) => (tracking && tracking.ride_id === r.id && tracking.geofence) || {};
+  const lockText = (r, place) => {
+    const g = geo(r);
+    if (g.reason === 'imprecise') return `GPS ±${Math.round(g.accuracy_m || 0)} m, too imprecise`;
+    if (g.distance_m == null) return 'waiting for GPS';
+    return `${g.distance_m < 1000 ? `${g.distance_m} m` : `${(g.distance_m / 1000).toFixed(1)} km`} away · unlocks within ${g.radius_m} m of the ${place}`;
+  };
 
   const statusAction = (id, value, message) =>
     act.run(async () => {
@@ -96,18 +106,18 @@ export function Dashboard() {
               <RideCard ride={r}>
                 <StatusBadge status={r.status} label={r.status_display} />
                 {r.status === 'ACCEPTED' && (
-                  <button className="btn ghost" disabled={act.busy}
-                    onClick={() => statusAction(r.id, 'ARRIVED', "Marked as arrived. Ask the rider for their OTP.")}>
-                    I've arrived
+                  <button className="btn primary" disabled={act.busy || !geo(r).within}
+                    onClick={() => statusAction(r.id, 'ARRIVED', 'Marked as arrived. Ask the rider for their OTP.')}>
+                    {geo(r).within ? "I've arrived" : `I've arrived · ${lockText(r, 'pickup')}`}
                   </button>
                 )}
-                {(r.status === 'ACCEPTED' || r.status === 'ARRIVED') && (
+                {r.status === 'ARRIVED' && (
                   <button className="btn primary" disabled={act.busy} onClick={() => setOtpFor(r.id)}>Verify OTP</button>
                 )}
                 {r.status === 'IN_PROGRESS' && (
-                  <button className="btn success" disabled={act.busy}
-                    onClick={() => rideAction(r.id, 'complete', 'Ride completed. Earnings updated.')}>
-                    Complete ride
+                  <button className="btn success" disabled={act.busy || !geo(r).within}
+                    onClick={() => rideAction(r.id, 'complete', 'Ride completed. The rider now pays by UPI or cash.')}>
+                    {geo(r).within ? 'Complete ride' : `Complete · ${lockText(r, 'destination')}`}
                   </button>
                 )}
               </RideCard>
@@ -121,6 +131,22 @@ export function Dashboard() {
           ))
         ) : <Empty>No ongoing rides.</Empty>}
       </section>
+
+      {unpaid.data?.results.length > 0 && (
+        <section>
+          <h2>Awaiting payment</h2>
+          {unpaid.data.results.map((r) => (
+            <RideCard key={r.id} ride={r}>
+              <span className="muted small">{r.payment_status === 'CASH_DUE' ? 'Rider chose cash' : "Rider hasn't paid yet"}</span>
+              <button className="btn success" disabled={act.busy}
+                onClick={() => window.confirm(`Did you receive ${money(r.fare)} in cash?`) &&
+                  rideAction(r.id, 'cash-collected', 'Cash payment recorded.')}>
+                Cash collected
+              </button>
+            </RideCard>
+          ))}
+        </section>
+      )}
 
       <section>
         <div className="page-head">
