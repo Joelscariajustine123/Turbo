@@ -36,7 +36,10 @@ python manage.py test                        # 48 tests
 | `DJANGO_DEBUG` | `True` | `False` in production |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1,10.0.2.2` | Add your LAN IP / domain |
 | `DJANGO_CORS_ORIGINS` | `http://localhost:5173,…` | Browser origins allowed to call the API |
+| `DATABASE_URL` | — | Postgres URL; when set, SQLite is not used |
 | `DJANGO_DB_PATH` | `db.sqlite3` | SQLite file location |
+| `DJANGO_MEDIA_ROOT` | `media/` | Where uploaded photos are stored |
+| `TURBO_ADMIN_EMAIL` / `TURBO_ADMIN_PASSWORD` | — | First admin, created on deploy by `manage.py ensure_admin` |
 | `TURBO_ROUTING_URL` | `https://router.project-osrm.org` | OSRM server for road distances; `''` = straight-line estimate only |
 | `TURBO_UPI_ID` | `joeljustine@ybl` | UPI ID riders pay to |
 
@@ -85,11 +88,11 @@ Needs Node 18+.
 ```powershell
 cd frontend
 npm install
-npm run dev        # http://localhost:5173 (calls Django on :8000 through the Vite proxy)
-npm run build      # production files in frontend/dist
+npm run dev        # http://localhost:5173/app/ (calls Django on :8000 through the Vite proxy)
+npm run build      # production files in frontend/dist/app — Django serves them at /app/
 ```
 
-For a production build served from a different host than Django, set `VITE_API_URL` (see `.env.example`) and add that site's origin to `DJANGO_CORS_ORIGINS`.
+In production Django serves the built app at `/app/` (same origin as the API, so no CORS needed). Only if you host it on a different domain: set `VITE_API_URL` (see `.env.example`) and add that origin to `DJANGO_CORS_ORIGINS`.
 
 ---
 
@@ -116,3 +119,38 @@ flutter run
 | Turbo Admin | dashboard stats, rides/payments with filters, manage riders and drivers, daily reports, contact messages, add admins |
 
 The apps refresh every 10–20 seconds; there is no push/WebSocket channel yet.
+
+---
+
+## 5. Hosting on Render
+
+Everything runs as **one Docker web service** (website + API + React app at `/app/`) plus a **Render Postgres** database, described in [`render.yaml`](render.yaml).
+
+1. Push this repository to GitHub.
+2. In the Render dashboard: **New → Blueprint** → choose the repo → Render reads `render.yaml`.
+3. Enter the requested `TURBO_ADMIN_EMAIL` and `TURBO_ADMIN_PASSWORD` (your first admin account) → **Apply**.
+4. The first deploy takes ~5–10 minutes. Your site is then at `https://<service-name>.onrender.com`:
+
+| URL | What |
+|---|---|
+| `/` | Original Django website |
+| `/app/` | React app (riders, drivers, admins) |
+| `/api/` | REST API (mobile apps) |
+| `/admin/` | Django admin (log in with the TURBO_ADMIN account) |
+
+Each `git push` to `main` redeploys automatically. Migrations run on every start.
+
+**Mobile apps against Render:** `flutter run --dart-define=API_URL=https://<service-name>.onrender.com` (or `flutter build apk --dart-define=…`).
+
+**Free plan limits**
+* The web service sleeps after 15 min without traffic; the next request takes about a minute to wake it.
+* Free Postgres databases expire after 30 days, so upgrade the database plan to keep your data.
+* Uploaded driver photos are stored on the container disk and **disappear on each deploy/restart**. To keep them, use a paid plan with the disk shown (commented) in `render.yaml` and set `DJANGO_MEDIA_ROOT=/srv/media`.
+
+**Moving existing data from SQLite (optional):**
+```powershell
+python manage.py dumpdata --natural-foreign --exclude contenttypes --exclude auth.permission --exclude token_blacklist -o data.json
+# then, with DATABASE_URL set to the Render database's *External* URL:
+python manage.py migrate
+python manage.py loaddata data.json
+```

@@ -4,7 +4,7 @@
             color: #fff;
             margin: 0;
             padding: 0;
-            background-image: linear-gradient(rgba(0,0,0,0.75),rgba(0,0,0,0.75)),url(img/vecteezy_gps-navigation-on-the-smartphone-screen-with_23847262.jpg);
+            background-image: linear-gradient(rgba(0,0,0,0.75),rgba(0,0,0,0.75)),url(../img/vecteezy_gps-navigation-on-the-smartphone-screen-with_23847262.jpg);
             background-size: cover;
             
         }
@@ -14,7 +14,7 @@
             margin: 50px auto;
             padding: 30px;
             background-color: #111;
-            /* background-image: url(img/vecteezy_gps-navigation-on-the-smartphone-screen-with_23847262.jpg); */
+            /* background-image: url(../img/vecteezy_gps-navigation-on-the-smartphone-screen-with_23847262.jpg); */
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
             text-align: center;

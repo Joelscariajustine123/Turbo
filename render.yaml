@@ -1,0 +1,41 @@
+# Render Blueprint: in the Render dashboard choose New > Blueprint, pick this repo,
+# fill in the two TURBO_ADMIN_* values when asked, and click Apply.
+
+databases:
+  - name: turbo-db
+    plan: free            # free Postgres expires after 30 days; upgrade to keep data
+    databaseName: turbo
+    user: turbo
+
+services:
+  - type: web
+    name: turbo
+    runtime: docker
+    plan: free            # free services sleep after 15 min idle (first request then takes ~1 min)
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/meta/
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: turbo-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: WEB_CONCURRENCY
+        value: "2"
+      # First admin account, created on the first deploy (you will be asked for these).
+      - key: TURBO_ADMIN_EMAIL
+        sync: false
+      - key: TURBO_ADMIN_PASSWORD
+        sync: false
+      - key: TURBO_UPI_ID
+        value: joeljustine@ybl
+    # Uploaded driver photos are lost on redeploy on the free plan. On a paid plan,
+    # uncomment this disk and add the env var DJANGO_MEDIA_ROOT=/srv/media.
+    # disk:
+    #   name: media
+    #   mountPath: /srv/media
+    #   sizeGB: 1

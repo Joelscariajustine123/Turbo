@@ -1,17 +1,36 @@
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.http import FileResponse, Http404
+from django.urls import include, path, re_path
+from django.views.static import serve as serve_file
+
+
+def react_app(request, *args, **kwargs):
+    """Return the React app's index.html for any /app/... route (client-side routing).
+
+    The JS/CSS files themselves are served by WhiteNoise before this view runs.
+    """
+    index = settings.REACT_BUILD_DIR / 'app' / 'index.html'
+    if not index.is_file():
+        raise Http404('React app not built. Run "npm run build" in frontend/.')
+    response = FileResponse(index.open('rb'), content_type='text/html')
+    response['Cache-Control'] = 'no-cache'
+    return response
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
+    re_path(r'^app(?:/.*)?$', react_app, name='react-app'),
     path('', include('account.urls')),
     path('adminpages/', include('adminpages.urls')),
     path('driverpages/', include('driverpages.urls')),
     path('riderpages/', include('riderpages.urls')),
 ]
 
-# Static files are served by runserver automatically; uploaded media needs this
-# in development (static() returns nothing when DEBUG is False).
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Uploaded files (driver photos). Fine for a small deployment; use object
+# storage (S3/Cloudinary) if traffic grows.
+if settings.SERVE_MEDIA:
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve_file, {'document_root': settings.MEDIA_ROOT}),
+    ]

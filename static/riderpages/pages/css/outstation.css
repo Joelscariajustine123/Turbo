@@ -120,7 +120,7 @@ body{
       padding: 0;
       background: var(--bg-color);
       color: var(--text-color);
-      background-image:  linear-gradient(rgba(0,0,0,0.75),rgba(0,0,0,0.75)),url(../pages/img/vecteezy_woman-driver-hand-adjust-cell-phone-in-stand-holder-for_7311965.jpg);
+      background-image:  linear-gradient(rgba(0,0,0,0.75),rgba(0,0,0,0.75)),url(../img/vecteezy_woman-driver-hand-adjust-cell-phone-in-stand-holder-for_7311965.jpg);
       background-size: cover;
       background-position: center;
       width: 100%;
