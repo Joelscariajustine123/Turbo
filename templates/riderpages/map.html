@@ -251,7 +251,12 @@
 
     <script>
         const map = L.map('map').setView([11.8745, 75.3704], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        // OpenStreetMap tile policy: single tile host, visible attribution, and the
+        // browser must send a Referer (see SECURE_REFERRER_POLICY in settings.py).
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+        }).addTo(map);
 
         const carSelect = document.getElementById('car');
         const distanceEl = document.getElementById('distance');

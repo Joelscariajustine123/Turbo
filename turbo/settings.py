@@ -52,7 +52,9 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', 3600))
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_REFERRER_POLICY = 'same-origin'
+    # Send only our origin (never the path) to other sites. OpenStreetMap's tile
+    # servers block map tiles requested without a Referer, so 'same-origin' breaks the map.
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 
 # ---------------------------------------------------------------------------

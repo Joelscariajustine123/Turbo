@@ -147,7 +147,8 @@ export default function Book() {
         <MapContainer center={KANNUR} zoom={13} className="map">
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
           />
           <ClickToPick onPick={pickOnMap} />
           <FitTo points={points} />
