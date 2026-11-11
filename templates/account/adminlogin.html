@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Turbo Cab - Login</title>
+  <title>Admin login · Turbo Cab</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="{% static 'account/css/adminlogin.css' %}" />
@@ -12,6 +12,7 @@
 <body>
   <div class="login-page">
     <div class="login-card">
+      {% include "partials/auth_brand.html" with heading="Admin login" %}
       <h2 class="title">Log in</h2>
       {% include "partials/messages.html" %}
       <form action="" method="post" class="login-form">
@@ -21,7 +22,7 @@
           <label>Email address</label>
           <div class="input-box">
             <i class='bx bx-envelope'></i>
-            <input type="email" name="email" placeholder="test@saberali.co" required />
+            <input type="email" name="email" placeholder="you@example.com" required />
           </div>
         </div>
 
@@ -47,6 +48,7 @@
         {% include "partials/google_button.html" with role="admin" text="signin_with" %}
       </form>
     </div>
+      {% include "partials/auth_footer.html" %}
   </div>
 </body>
 </html>

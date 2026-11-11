@@ -1,0 +1,7 @@
+{% load static %}
+{% comment %} Site identity on the login / sign-up cards: logo, name and which account type. {% endcomment %}
+<a href="{% url 'account:usertype' %}" style="display:flex;align-items:center;gap:10px;justify-content:center;margin:0 0 14px;text-decoration:none;color:inherit">
+  <img src="{% static 'riderpages/pages/img/web/logo.webp' %}" alt="" width="96" height="30" style="height:30px;width:auto" />
+  <span style="font-weight:800;font-size:1.05rem;letter-spacing:-.01em">Turbo Cab</span>
+</a>
+<p style="text-align:center;margin:-6px 0 18px;color:#a1a1aa;font-size:.88rem">{{ heading }}</p>

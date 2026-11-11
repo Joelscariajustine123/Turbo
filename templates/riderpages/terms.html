@@ -1,0 +1,50 @@
+{% extends 'riderpages/base.html' %}
+{% block title %}Terms of service{% endblock %}
+{% block description %}The terms for using Turbo Cab as a rider or driver.{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <span class="eyebrow">Legal</span>
+    <h1 class="h1">Terms of service</h1>
+    <p class="lead">The basics of using Turbo Cab. Last updated {% now "j F Y" %}.</p>
+  </div>
+</section>
+
+<section class="section-tight" style="padding-top:0">
+  <div class="container stack" style="max-width:820px">
+    <div class="card stack">
+      <h2 style="font-size:1.25rem">Your account</h2>
+      <ul class="check-list">
+        <li>Use your own name, a working email address and phone number. Keep your password and verification codes private — Turbo Cab staff will never ask for them.</li>
+        <li>You're responsible for activity on your account. Tell us at once if you think someone else has used it.</li>
+      </ul>
+    </div>
+    <div class="card stack">
+      <h2 style="font-size:1.25rem">Booking and riding</h2>
+      <ul class="check-list">
+        <li>The fare is shown before you book: a base fare plus a fixed rate per kilometre for the vehicle type you choose.</li>
+        <li>Share your ride OTP with the driver only after you are in the vehicle.</li>
+        <li>You pay after the ride is completed, by UPI or cash. For UPI, enter the real transaction ID from your payment app.</li>
+        <li>You can cancel a ride until a driver accepts it.</li>
+      </ul>
+    </div>
+    <div class="card stack">
+      <h2 style="font-size:1.25rem">Driving with Turbo</h2>
+      <ul class="check-list">
+        <li>Keep your licence, vehicle and registration details accurate and up to date.</li>
+        <li>Your location is shared while you're online. Mark "Arrived" and "Complete" only at the pickup and destination, and start a ride only with the rider's OTP.</li>
+        <li>Confirm cash payments only once you have received the money.</li>
+      </ul>
+    </div>
+    <div class="card stack">
+      <h2 style="font-size:1.25rem">Fair use</h2>
+      <p class="muted">Don't misuse the service — for example by entering false locations or payment details, harassing other users, or trying to access accounts or data that aren't yours. We may suspend accounts that do.</p>
+    </div>
+    <div class="card stack">
+      <h2 style="font-size:1.25rem">Contact</h2>
+      <p class="muted">Questions about these terms: <a href="mailto:Turbocabs@gmail.com" style="color:var(--accent-2)">Turbocabs@gmail.com</a> · Anjarakandy 670612, Kannur, Kerala. See also our <a href="{% url 'riderpages:privacy' %}" style="color:var(--accent-2)">privacy policy</a>.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

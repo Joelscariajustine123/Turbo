@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0a0a0c" />
+  {% if GOOGLE_SITE_VERIFICATION %}<meta name="google-site-verification" content="{{ GOOGLE_SITE_VERIFICATION }}" />{% endif %}
   <meta name="description" content="{% block description %}Turbo Cab — book safe, comfortable rides in Kannur and across Kerala. Sedans, SUVs, bikes and autos with transparent fares.{% endblock %}" />
   <title>{% block title %}Ride with Turbo{% endblock %} · Turbo Cab</title>
   <link rel="icon" type="image/png" href="{% static 'riderpages/pages/img/icons8-cab-64.png' %}" />
@@ -88,7 +89,8 @@
             <li><a href="{% url 'riderpages:safety' %}">Safety</a></li>
             <li><a href="{% url 'riderpages:contact' %}">Contact us</a></li>
             <li><a href="{% url 'account:driver_login' %}">Drive with Turbo</a></li>
-            <li><a href="{% url 'account:admin_login' %}">Admin</a></li>
+            <li><a href="{% url 'riderpages:privacy' %}">Privacy policy</a></li>
+            <li><a href="{% url 'riderpages:terms' %}">Terms of service</a></li>
           </ul>
         </div>
         <div>

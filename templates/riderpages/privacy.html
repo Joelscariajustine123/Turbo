@@ -1,0 +1,59 @@
+{% extends 'riderpages/base.html' %}
+{% block title %}Privacy policy{% endblock %}
+{% block description %}How Turbo Cab collects, uses and protects your information.{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <span class="eyebrow">Legal</span>
+    <h1 class="h1">Privacy policy</h1>
+    <p class="lead">What Turbo Cab collects, why, and how long we keep it. Last updated {% now "j F Y" %}.</p>
+  </div>
+</section>
+
+<section class="section-tight" style="padding-top:0">
+  <div class="container stack" style="max-width:820px">
+    <div class="card stack">
+      <h2 style="font-size:1.25rem">Information we collect</h2>
+      <ul class="check-list">
+        <li><strong>Account details:</strong> your name, email address, phone number and username. If you sign in with Google we receive your name, email address and Google account ID — never your Google password.</li>
+        <li><strong>Ride details:</strong> pickup and drop locations (map coordinates and addresses), vehicle type, distance, fare, ride status and times.</li>
+        <li><strong>Driver location:</strong> while a driver is online, their device's GPS position is sent every few seconds. Only the latest position is kept for live tracking, plus a sparse trail during rides.</li>
+        <li><strong>Driver profile:</strong> licence number, vehicle model, registration number and an optional profile photo.</li>
+        <li><strong>Payments:</strong> the payment method you choose (UPI or cash) and, for UPI, the transaction ID you enter. We never see or store bank, card or UPI PIN details.</li>
+        <li><strong>Messages</strong> you send through the contact form, and ratings you give drivers.</li>
+      </ul>
+    </div>
+
+    <div class="card stack">
+      <h2 style="font-size:1.25rem">How we use it</h2>
+      <ul class="check-list">
+        <li>To create and secure your account, including emailing one-time verification codes.</li>
+        <li>To match riders with drivers, calculate fares and show live trip tracking.</li>
+        <li>A driver's live location is shown <strong>only</strong> to the rider of a ride that driver accepted, and only until the ride ends. The rider's phone number is shared with the driver only after they accept the ride.</li>
+        <li>To record payments and driver earnings, and to answer your messages.</li>
+      </ul>
+      <p class="muted">We don't sell your information or use it for advertising.</p>
+    </div>
+
+    <div class="card stack">
+      <h2 style="font-size:1.25rem">How long we keep it</h2>
+      <ul class="check-list">
+        <li>Trip GPS trails are deleted automatically after 30 days.</li>
+        <li>Verification codes expire after 10 minutes and can be used once.</li>
+        <li>Account and ride records are kept while your account exists. Ask us to delete your account and we will remove your personal details.</li>
+      </ul>
+    </div>
+
+    <div class="card stack">
+      <h2 style="font-size:1.25rem">Security</h2>
+      <p class="muted">All traffic uses HTTPS. Passwords are stored as one-way hashes, verification codes and ride OTPs are stored only as keyed hashes, and every page and API checks that you are allowed to see the data you request.</p>
+    </div>
+
+    <div class="card stack">
+      <h2 style="font-size:1.25rem">Your choices and contact</h2>
+      <p class="muted">You can update your name, email and phone in your account settings, turn location sharing off by going offline (drivers), and ask for a copy or deletion of your data by emailing <a href="mailto:Turbocabs@gmail.com" style="color:var(--accent-2)">Turbocabs@gmail.com</a> or using the <a href="{% url 'riderpages:contact' %}" style="color:var(--accent-2)">contact form</a>.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

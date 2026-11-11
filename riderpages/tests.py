@@ -109,3 +109,22 @@ class PricingTests(TestCase):
             route = pricing.get_route(11.8745, 75.3704, 11.95, 75.42)
         self.assertEqual((route.source, str(route.distance_km)), ('osrm', '12.35'))
         self.assertEqual(route.geometry[0], [11.87, 75.37])
+
+
+class TrustPagesTests(TestCase):
+    def test_privacy_terms_and_branded_login_pages(self):
+        for name in ('privacy', 'terms'):
+            self.assertEqual(self.client.get(reverse(f'riderpages:{name}')).status_code, 200)
+        for name in ('rider_login', 'driver_login', 'admin_login', 'rider_signup', 'driver_signup'):
+            page = self.client.get(reverse(f'account:{name}'))
+            self.assertContains(page, 'Turbo Cab')
+            self.assertContains(page, reverse('riderpages:privacy'))
+            self.assertNotContains(page, 'saberali')
+            self.assertNotContains(page, 'Logo_2013_Google')
+
+    def test_search_console_verification_tag(self):
+        from django.test import override_settings
+        self.assertNotContains(self.client.get('/'), 'google-site-verification')
+        with override_settings(GOOGLE_SITE_VERIFICATION='abc123token'):
+            self.assertContains(self.client.get('/'), '<meta name="google-site-verification" content="abc123token" />',
+                                html=False)

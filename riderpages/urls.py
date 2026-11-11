@@ -15,4 +15,6 @@ urlpatterns = [
     path('my-rides/', views.my_rides, name='my_rides'),
     path('my-rides/<int:ride_id>/cancel/', views.cancel_ride, name='cancel_ride'),
     path('track/<int:ride_id>/', views.track_ride, name='track_ride'),
+    path('privacy/', views.privacy, name='privacy'),
+    path('terms/', views.terms, name='terms'),
 ]

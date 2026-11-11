@@ -274,6 +274,8 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL',
 # Sign in with Google: the OAuth *Web* client ID from Google Cloud Console
 # (no client secret needed — the browser gets a signed ID token that the server verifies).
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '').strip()
+# Google Search Console ownership token (the content="..." value of the HTML-tag method).
+GOOGLE_SITE_VERIFICATION = os.environ.get('GOOGLE_SITE_VERIFICATION', '').strip()
 # Google's sign-in popup needs this instead of Django's default 'same-origin'.
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
 

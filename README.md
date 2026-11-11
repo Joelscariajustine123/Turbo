@@ -52,6 +52,7 @@ python manage.py test                        # 48 tests
 | `DEFAULT_FROM_EMAIL` | `Turbo Cab <EMAIL_HOST_USER>` | Sender shown in the emails |
 | `TURBO_EMAIL_OTP` | `auto` | `on` / `off` / `auto` (on when email is configured) |
 | `GOOGLE_OAUTH_CLIENT_ID` | — | OAuth Web client ID for "Continue with Google" (button hidden when empty) |
+| `GOOGLE_SITE_VERIFICATION` | — | Google Search Console ownership token (meta tag on the homepage) |
 
 ### How fares work
 The client sends pickup/drop **coordinates**; the server works out the distance (OSRM road route, or straight line × 1.3 if OSRM is unreachable, with a 5-minute back-off) and the fare: `₹50 + km × rate` (Sedan 15, SUV 20, Bike 8, Auto 12, set in `riderpages/models.py`). Clients cannot set the price.
@@ -262,3 +263,17 @@ A **Continue with Google** button is shown on the login and sign-up pages (websi
 5. In Render, open **turbo → Environment**, add `GOOGLE_OAUTH_CLIENT_ID` = that ID, then **Save, rebuild and deploy**.
 
 Google sign-in works on Render's free plan (it doesn't send email). The mobile apps still use email + password; adding Google there needs an Android OAuth client with your app's signing SHA-1.
+
+---
+
+## 10. If Chrome shows "Dangerous site"
+
+That's a Google Safe Browsing flag on the address, not an error in the app. New sites on shared hosts like `onrender.com` are often flagged, especially pages with password forms. Only the site owner can ask Google to review it:
+
+1. Go to [search.google.com/search-console](https://search.google.com/search-console), click **Add property → URL prefix**, and enter `https://turbo-u967.onrender.com/`.
+2. Choose the **HTML tag** method and copy only the `content="…"` value.
+3. In Render, open **turbo → Environment**, add `GOOGLE_SITE_VERIFICATION` = that value, then **Save, rebuild and deploy**. Back in Search Console, click **Verify**.
+4. Open **Security & Manual Actions → Security issues**, read which pages are listed, then click **Request review**. Explain: *"Turbo Cab is a ride-booking project. The login pages are our own (rider/driver/admin). We removed a placeholder Google logo button and a template's example email, and added our branding, privacy policy and terms."*
+5. Reviews usually take from a day to a few days. Afterwards the warning disappears for everyone.
+
+A custom domain (for example `turbocab.in`, added under Render → turbo → Settings → Custom Domains) avoids sharing reputation with other `onrender.com` sites.

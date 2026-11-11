@@ -4,13 +4,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sign Up - Turbo Cab</title>
+  <title>Create a rider account · Turbo Cab</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="{% static 'account/css/signup.css' %}" />
 </head>
 <body>
   <div class="signup-container">
+    {% include "partials/auth_brand.html" with heading="Create a rider account" %}
     <h2 class="title">Sign Up</h2>
     {% include "partials/messages.html" %}
     <form action="" method="post" class="signup-form">
@@ -63,6 +64,7 @@
       </div>
         {% include "partials/google_button.html" with role="rider" text="signup_with" %}
     </form>
+    {% include "partials/auth_footer.html" %}
   </div>
 </body>
 </html>

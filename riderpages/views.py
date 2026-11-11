@@ -52,6 +52,14 @@ def outstation(request):
     return render(request, 'riderpages/outstation.html', {'routes': POPULAR_ROUTES})
 
 
+def privacy(request):
+    return render(request, 'riderpages/privacy.html')
+
+
+def terms(request):
+    return render(request, 'riderpages/terms.html')
+
+
 def services_page(request):
     return render(request, 'riderpages/services.html')
 

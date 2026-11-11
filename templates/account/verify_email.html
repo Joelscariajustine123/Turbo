@@ -48,6 +48,7 @@
       </form>
       <p class="verify-foot">The code expires in 10 minutes. Check your spam folder if you can't find it.<br>
         <a href="{% url back_url %}">← Back to log in</a></p>
+      {% include "partials/auth_footer.html" %}
     </div>
   </div>
   <script>

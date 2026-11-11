@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Turbo Cab - Login</title>
+  <title>Driver login · Turbo Cab</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="{% static 'account/css/driverlogin.css' %}" />
@@ -12,6 +12,7 @@
 <body>
   <div class="login-page">
     <div class="login-card">
+      {% include "partials/auth_brand.html" with heading="Driver login" %}
       <h2 class="title">Log in</h2>
       {% include "partials/messages.html" %}
       <form action="" method="post" class="login-form">
@@ -21,7 +22,7 @@
           <label>Email address</label>
           <div class="input-box">
             <i class='bx bx-envelope'></i>
-            <input type="email" placeholder="test@saberali.co" name="email"  required />
+            <input type="email" placeholder="you@example.com" name="email"  required />
           </div>
         </div>
 
@@ -46,6 +47,7 @@
         {% include "partials/google_button.html" with role="driver" text="continue_with" %}
       </form>
     </div>
+      {% include "partials/auth_footer.html" %}
   </div>
 </body>
 </html>
