@@ -1,78 +1,119 @@
 {% extends 'riderpages/base.html' %}
 {% load static %}
+{% block title %}Outstation rides{% endblock %}
+
 {% block content %}
-  <header>
-    <h1>Turbo Cab – Outstation Rides</h1>
-    <p>Reliable. Affordable. Always Available.</p>
-  </header>
-
-  <div class="section features">
-    <h2>Why Choose Turbo Cab?</h2>
-    <ul>
-      <li>24/7 Availability</li>
-      <li>Clean & Comfortable Cabs</li>
-      <li>Verified, Professional Drivers</li>
-      <li>Transparent Pricing</li>
-      <li>One-Way & Round-Trip Options</li>
-    </ul>
+<section class="page-hero has-image">
+  <div class="hero-bg"><img src="{% static 'riderpages/pages/img/web/gps.webp' %}" alt="" width="1600" height="800" /></div>
+  <div class="container">
+    <span class="eyebrow">Outstation</span>
+    <h1 class="h1">Long trips, made easy</h1>
+    <p class="lead">Reliable, affordable and always available — intercity rides with professional drivers and transparent pricing.</p>
+    <div class="hero-actions">
+      <a href="{% url 'riderpages:map_view' %}" class="btn btn-primary"><i class="bx bxs-map"></i>Book an outstation ride</a>
+      <a href="{% url 'riderpages:contact' %}" class="btn btn-ghost">Ask about a trip</a>
+    </div>
   </div>
+</section>
 
-  <div class="section routes">
-    <h2>Popular Routes</h2>
-    <ul>
-      <li>Bangalore ⇌ Mysore</li>
-      <li>Delhi ⇌ Agra</li>
-      <li>Mumbai ⇌ Lonavala</li>
-      <li>Chennai ⇌ Pondicherry</li>
-      <li>Hyderabad ⇌ Warangal</li>
-    </ul>
+<section class="section-tight">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Why choose Turbo</span>
+      <h2 class="h2">Built for the open road</h2>
+    </div>
+    <div class="chips reveal">
+      <span class="chip"><i class="bx bx-time-five"></i>24/7 availability</span>
+      <span class="chip"><i class="bx bx-spray-can"></i>Clean &amp; comfortable cabs</span>
+      <span class="chip"><i class="bx bx-user-check"></i>Verified, professional drivers</span>
+      <span class="chip"><i class="bx bx-receipt"></i>Transparent pricing</span>
+      <span class="chip"><i class="bx bx-transfer-alt"></i>One-way &amp; round-trip options</span>
+    </div>
   </div>
+</section>
 
-  <div class="section packages">
-    <h2>Outstation Packages</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Package Type</th>
-          <th>Inclusions</th>
-          <th>Ideal For</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>One-Way Trip</td>
-          <td>Pickup & drop, tolls, driver charges</td>
-          <td>Intercity travel, airport</td>
-        </tr>
-        <tr>
-          <td>Round Trip</td>
-          <td>2-way travel, night halt, full service</td>
-          <td>Family trips, tours</td>
-        </tr>
-        <tr>
-          <td>Multi-Day Trip</td>
-          <td>Custom plan, multi-city, flexible stops</td>
-          <td>Road trips, holidays</td>
-        </tr>
-      </tbody>
-    </table>
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Packages</span>
+      <h2 class="h2">Pick the trip that fits</h2>
+    </div>
+    <div class="grid grid-3">
+      <article class="card package reveal">
+        <span class="label">One-way</span>
+        <h3>One-way trip</h3>
+        <dl>
+          <div><dt>Includes</dt><dd>Pickup &amp; drop, tolls, driver charges</dd></div>
+          <div><dt>Ideal for</dt><dd>Intercity travel, airport runs</dd></div>
+        </dl>
+      </article>
+      <article class="card package featured reveal reveal-delay-1">
+        <span class="label">Most popular</span>
+        <h3>Round trip</h3>
+        <dl>
+          <div><dt>Includes</dt><dd>Two-way travel, night halt, full service</dd></div>
+          <div><dt>Ideal for</dt><dd>Family trips and tours</dd></div>
+        </dl>
+      </article>
+      <article class="card package reveal reveal-delay-2">
+        <span class="label">Multi-day</span>
+        <h3>Multi-day trip</h3>
+        <dl>
+          <div><dt>Includes</dt><dd>Custom plan, multiple cities, flexible stops</dd></div>
+          <div><dt>Ideal for</dt><dd>Road trips and holidays</dd></div>
+        </dl>
+      </article>
+    </div>
   </div>
+</section>
 
-  <div class="section reviews">
-    <h2>What Our Customers Say</h2>
-    <blockquote>
-      “Turbo Cab made our weekend trip smooth and stress-free!” – <strong>Anjali M.</strong>
-    </blockquote>
-    <blockquote>
-      “On-time, clean car, polite driver. Will book again.” – <strong>Rakesh P.</strong>
-    </blockquote>
+<section class="section">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Popular routes</span>
+      <h2 class="h2">Where riders are heading</h2>
+    </div>
+    <div class="grid grid-2">
+      {% for a, b in routes %}
+      <div class="card card-hover route reveal">
+        <div class="route-cities">{{ a }} <i class="bx bx-transfer-alt"></i> {{ b }}</div>
+        <a href="{% url 'riderpages:map_view' %}" class="btn btn-ghost btn-sm">Book</a>
+      </div>
+      {% endfor %}
+    </div>
   </div>
+</section>
 
-  <div class="cta">
-    <h2>Ready for Your Next Trip?</h2>
-    <p>Book via Website or Call: <strong>1800-XXX-XXXX</strong></p>
-    <button>Book Now</button>
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="eyebrow">Reviews</span>
+      <h2 class="h2">What our customers say</h2>
+    </div>
+    <div class="grid grid-2">
+      <figure class="card review reveal">
+        <div class="stars">★★★★★</div>
+        <blockquote>“Turbo Cab made our weekend trip smooth and stress-free!”</blockquote>
+        <figcaption class="reviewer"><span class="avatar">A</span><div><strong>Anjali M.</strong><span>Weekend trip</span></div></figcaption>
+      </figure>
+      <figure class="card review reveal reveal-delay-1">
+        <div class="stars">★★★★★</div>
+        <blockquote>“On time, clean car, polite driver. Will book again.”</blockquote>
+        <figcaption class="reviewer"><span class="avatar">R</span><div><strong>Rakesh P.</strong><span>Intercity ride</span></div></figcaption>
+      </figure>
+    </div>
   </div>
+</section>
 
-
-{% endblock  %}
+<section class="section-tight">
+  <div class="container">
+    <div class="cta-band reveal">
+      <div>
+        <h2 class="h2">Ready for your next trip?</h2>
+        <p>Book on the website or call us at <strong>1800-XXX-XXXX</strong>.</p>
+      </div>
+      <div class="actions"><a href="{% url 'riderpages:map_view' %}" class="btn btn-light"><i class="bx bxs-taxi"></i>Book now</a></div>
+    </div>
+  </div>
+</section>
+{% endblock %}

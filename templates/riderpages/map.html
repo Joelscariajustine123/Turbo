@@ -8,23 +8,20 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     
-    <!-- Google Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
         /* Base layout for the app container */
         .app-container {
             display: flex;
-            height: 100vh;
+            height: calc(100svh - var(--nav-h));
+            min-height: 560px;
             font-family: 'Inter', sans-serif;
         }
 
         /* Sidebar set to 50% width */
         .sidebar {
             width: 50%;
-            background-color: #111;
+            background: var(--bg-2); border-right: 1px solid var(--line);
             color: #fff;
             padding: 2rem; 
             box-sizing: border-box;
@@ -54,8 +51,8 @@
             height: 48px;
             padding: 0 0.8rem;
             line-height: 48px;
-            border: 1px solid #444;
-            background-color: #2a2a2a;
+            border: 1px solid var(--line-strong);
+            background-color: var(--bg);
             color: #fff;
             border-radius: 8px;
             font-size: 0.95rem;
@@ -94,11 +91,11 @@
         }
 
         .ride-summary {
-            background-color: #2a2a2a;
+            background-color: var(--surface);
             padding: 1rem;
             border-radius: 8px;
             margin-bottom: 1.2rem;
-            border-left: 3px solid #007bff;
+            border: 1px solid var(--line); border-left: 3px solid var(--accent);
         }
 
         .ride-summary p {
@@ -115,7 +112,7 @@
         #book-btn {
             width: 100%;
             padding: 1rem;
-            background-color: #007bff;
+            background-color: var(--accent);
             color: #fff;
             border: none;
             border-radius: 8px;
@@ -127,7 +124,7 @@
         }
 
         #book-btn:hover {
-            background-color: #0056b3;
+            background-color: #2f74e6;
         }
 
         #map {
@@ -150,7 +147,7 @@
             top: 100%;
             left: 0;
             right: 0;
-            background: #3a3a3a;
+            background: var(--surface-2);
             border: 1px solid #555;
             border-top: none;
             border-radius: 0 0 8px 8px;
@@ -177,11 +174,26 @@
         }
 
         .suggestion-item:not(.message):hover {
-            background-color: #007bff;
+            background-color: var(--accent);
         }
 
+
+        /* ---- Turbo theme layout ---- */
+        .sidebar { width: 420px; flex-shrink: 0; padding: 28px; }
+        .sidebar h2 { text-align: left; letter-spacing: .02em; font-size: 1.1rem; color: var(--text-2); margin-bottom: 1.5rem; }
+        .sidebar form input:focus, .sidebar form select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+        .ride-summary { border-radius: 14px; }
+        #book-btn { border-radius: 999px; box-shadow: 0 10px 30px -10px rgba(59,130,246,.8); }
+        .suggestions-list { border-radius: 0 0 12px 12px; }
+        @media (max-width: 800px) {
+            .app-container { flex-direction: column; height: auto; }
+            #map { order: -1; height: 46svh; min-height: 300px; flex-grow: 0; }
+            .sidebar { width: 100%; height: auto; padding: 20px 16px 32px; border-right: 0; }
+        }
     </style>
 {% endblock %}
+
+{% block footer %}{% endblock %}
 
 {% block content %}
     <div class="app-container">
@@ -205,7 +217,7 @@
                 
                 <label>Estimated Details</label>
                 <div id="summary" class="ride-summary">
-                    <p>Distance: <span id="distance">--</span> km</p>
+                    <p>Distance: <span><span id="distance">--</span> km</span></p>
                     <p>Fare: <span>₹<span id="fare">--</span></span></p>
                 </div>
                 
@@ -395,7 +407,7 @@
             hiddenFareInput.value = '';
             routingControl = L.Routing.control({
                 waypoints: [pickupLatLng, dropLatLng],
-                lineOptions: { styles: [{ color: '#007bff', opacity: 0.8, weight: 6 }] },
+                lineOptions: { styles: [{ color: '#3b82f6', opacity: 0.85, weight: 6 }] },
                 createMarker: () => null, show: false, addWaypoints: false
             }).addTo(map);
             routingControl.on('routesfound', (e) => {

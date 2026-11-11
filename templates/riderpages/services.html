@@ -1,86 +1,81 @@
 {% extends 'riderpages/base.html' %}
 {% load static %}
+{% block title %}Services{% endblock %}
+
 {% block content %}
-  <header>
-    <h1>Our Services</h1>
-    <p>Your ride, your rules – fast, safe, and reliable with Turbo.</p>
-  </header>
+<section class="page-hero">
+  <div class="container">
+    <span class="eyebrow">Our services</span>
+    <h1 class="h1">Your ride, your rules</h1>
+    <p class="lead">Fast, safe and reliable — whatever the trip, Turbo has a ride that fits.</p>
+  </div>
+</section>
 
-  <section class="services-container">
-
-    <div class="service-card">
-      <i class='bx bxs-car'></i>
-      <h3>Flexible Ride Options</h3>
-      <p>Choose from economy, sedan, SUV, or bike rides that suit your comfort and budget. Ride solo or with friends, anytime.</p>
+<section class="section-tight">
+  <div class="container">
+    <div class="grid grid-3">
+      <article class="card card-hover reveal">
+        <div class="icon-badge"><i class="bx bxs-car"></i></div>
+        <h3>Flexible ride options</h3>
+        <p>Choose from bike, auto, sedan or SUV rides to suit your comfort and budget. Ride solo or with friends, anytime.</p>
+      </article>
+      <article class="card card-hover reveal reveal-delay-1">
+        <div class="icon-badge"><i class="bx bx-shield-quarter"></i></div>
+        <h3>Safety first</h3>
+        <p>All Turbo rides are tracked with real-time GPS and backed by 24/7 support. Drivers are verified and trained.</p>
+      </article>
+      <article class="card card-hover reveal reveal-delay-2">
+        <div class="icon-badge"><i class="bx bx-wallet"></i></div>
+        <h3>Transparent pricing</h3>
+        <p>No surprises — see your fare before you ride. Turbo uses clear pricing based on distance.</p>
+      </article>
+      <article class="card card-hover reveal">
+        <div class="icon-badge"><i class="bx bx-time-five"></i></div>
+        <h3>24/7 availability</h3>
+        <p>Turbo never sleeps. Whether it's a morning meeting or a midnight snack run, we're here for you.</p>
+      </article>
+      <article class="card card-hover reveal reveal-delay-1">
+        <div class="icon-badge"><i class="bx bx-map-alt"></i></div>
+        <h3>Live tracking</h3>
+        <p>Follow your ride's status from booking to arrival, and share it with the people who care.</p>
+      </article>
+      <article class="card card-hover reveal reveal-delay-2">
+        <div class="icon-badge"><i class="bx bx-support"></i></div>
+        <h3>Customer support</h3>
+        <p>Need help? Reach our support team anytime — we're always ready to assist.</p>
+      </article>
     </div>
+  </div>
+</section>
 
-    <div class="service-card">
-      <i class='bx bx-shield'></i>
-      <h3>Safety First</h3>
-      <p>All Turbo rides are tracked with real-time GPS and backed by 24/7 support. Drivers are verified and trained.</p>
-    </div>
-
-    <div class="service-card">
-      <i class='bx bx-wallet'></i>
-      <h3>Transparent Pricing</h3>
-      <p>No surprises! See your fare before you ride. Turbo uses clear pricing based on distance and time.</p>
-    </div>
-
-    <div class="service-card">
-      <i class='bx bx-time-five'></i>
-      <h3>24/7 Availability</h3>
-      <p>Turbo never sleeps. Whether it's a morning meeting or a midnight snack run, we're here for you.</p>
-    </div>
-
-    <div class="service-card">
-      <i class='bx bx-map'></i>
-      <h3>Live Tracking</h3>
-      <p>Track your driver in real time, share your ride status with loved ones, and stay informed until you arrive safely.</p>
-    </div>
-
-    <div class="service-card">
-      <i class='bx bx-support'></i>
-      <h3>Customer Support</h3>
-      <p>Need help? Chat or call our support team directly from the app, anytime – we're always ready to assist.</p>
-    </div>
-
-  </section>
-
-  <section class="about-section">
-    <h2>Why Choose Turbo?</h2>
-    <p>
-      Turbo Cab is more than just a ride — it’s your everyday travel companion. We aim to redefine transportation with unmatched comfort,
-      safety, and reliability. Whether you're heading to work, catching a flight, or visiting family, Turbo ensures you get there effortlessly.
-    </p>
-
-    <div class="highlights">
-      <div class="highlight-box">
-        <h4>Trusted by Thousands</h4>
-        <p>Join millions of riders across India who choose Turbo every day.</p>
-      </div>
-      <div class="highlight-box">
-        <h4>Green Future</h4>
-        <p>We support eco-friendly rides by offering hybrid and electric vehicle options.</p>
-      </div>
-      <div class="highlight-box">
-        <h4>Real-Time Updates</h4>
-        <p>Stay in the loop with accurate ETAs, traffic updates, and fare estimates.</p>
+<section class="section">
+  <div class="container split">
+    <div class="stack reveal">
+      <span class="eyebrow">Why Turbo</span>
+      <h2 class="h2">More than just a ride</h2>
+      <p class="lead">Turbo is your everyday travel companion — redefining transportation with comfort, safety and reliability. Heading to work, catching a flight or visiting family, we get you there effortlessly.</p>
+      <div class="grid grid-2" style="margin-top: 12px;">
+        <div class="card"><h3>Trusted by riders</h3><p>Riders across Kerala choose Turbo for their daily travel.</p></div>
+        <div class="card"><h3>Green future</h3><p>We support eco-friendly rides with hybrid and electric options.</p></div>
+        <div class="card"><h3>Real-time updates</h3><p>Accurate fare estimates and live ride status.</p></div>
+        <div class="card"><h3>Easy payments</h3><p>Pay the way you like — UPI or cash.</p></div>
       </div>
     </div>
-  </section>
+    <div class="media reveal reveal-delay-1">
+      <img src="{% static 'riderpages/pages/img/web/phone-in-car.webp' %}" alt="Phone showing a route map mounted in a car" loading="lazy" width="1600" height="897" />
+    </div>
+  </div>
+</section>
 
-  <!-- Scroll Fade-In Animation -->
-  <script>
-    const cards = document.querySelectorAll('.service-card');
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-        }
-      });
-    }, { threshold: 0.1 });
-
-    cards.forEach(card => observer.observe(card));
-  </script>
+<section class="section-tight">
+  <div class="container">
+    <div class="cta-band reveal">
+      <div>
+        <h2 class="h2">Find your ride</h2>
+        <p>Compare fares for every vehicle and book in seconds.</p>
+      </div>
+      <div class="actions"><a href="{% url 'riderpages:map_view' %}" class="btn btn-light"><i class="bx bxs-taxi"></i>Book now</a></div>
+    </div>
+  </div>
+</section>
 {% endblock %}

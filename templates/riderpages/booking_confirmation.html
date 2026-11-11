@@ -1,214 +1,111 @@
 {% extends 'riderpages/base.html' %}
-{% block title %}Confirm Ride{% endblock %}
+{% block title %}Confirm ride{% endblock %}
 
 {% block content %}
-<style>
-    .confirmation-container {
-        max-width: 600px;
-        margin: 4rem auto;
-        padding: 2rem;
-        background-color: #f9f9f9;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        text-align: center;
-        font-family: 'Inter', sans-serif;
-    }
-    .confirmation-container h2 {
-        font-size: 2rem;
-        color: #333;
-        margin-bottom: 1.5rem;
-    }
-    .ride-details {
-        text-align: left;
-        margin-bottom: 2rem;
-        padding: 1rem;
-        background-color: #fff;
-        border-left: 4px solid #007bff;
-        border-radius: 4px;
-    }
-    .ride-details p {
-        font-size: 1.1rem;
-        color: #555;
-        margin: 0.8rem 0;
-    }
-    .ride-details strong {
-        color: #111;
-    }
-    .fare-highlight {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #007bff;
-        margin: 1.5rem 0;
-    }
-    .payment-options h3 {
-        margin-bottom: 1.5rem;
-        color: #555;
-        font-weight: 500;
-    }
-    .payment-buttons {
-        display: flex;
-        justify-content: center;
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
-    .payment-btn {
-        display: inline-block;
-        padding: 0.8rem 1.5rem;
-        font-size: 1rem;
-        font-weight: 600;
-        color: #fff;
-        background-color: #5a3ab3; /* UPI color */
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        text-decoration: none;
-    }
-    .payment-btn.cash {
-        background-color: #ffc107;
-        color: #333;
-    }
-    .payment-btn:hover {
-        opacity: 0.9;
-    }
-    
-    /* UPI Modal Styles */
-    .modal-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.6);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-    }
-    .modal-content {
-        background-color: #fff;
-        padding: 2rem;
-        border-radius: 8px;
-        width: 90%;
-        max-width: 400px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-        text-align: center;
-    }
-    .qr-code {
-        padding: 10px;
-        background-color: white;
-        border-radius: 8px;
-        margin: 0 auto 1rem;
-        display: inline-block;
-    }
-    #transaction-id-input {
-        width: 100%;
-        padding: 0.8rem;
-        margin-top: 1rem;
-        margin-bottom: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        box-sizing: border-box;
-    }
-</style>
+<section class="section-tight">
+  <div class="container confirm">
+    <a href="{% url 'riderpages:my_rides' %}" class="muted" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:20px;"><i class="bx bx-left-arrow-alt"></i>My rides</a>
 
-<div class="confirmation-container">
-    <h2>Confirm Your Ride</h2>
-    <div class="ride-details">
-        <p><strong>From:</strong> {{ ride.pickup_location }}</p>
-        <p><strong>To:</strong> {{ ride.drop_location }}</p>
-        <p><strong>Distance:</strong> {{ ride.distance }} km</p>
-        <p><strong>Vehicle:</strong> {{ ride.get_car_type_display }}</p>
-    </div>
-    <p class="fare-highlight">₹{{ ride.fare|floatformat:2 }}</p>
-    {% if ride.status != 'PENDING' %}
-    <p>This ride is <strong>{{ ride.get_status_display }}</strong>{% if ride.payment_method %} (paid by {{ ride.get_payment_method_display }}){% endif %}.</p>
-    {% else %}
-    <div class="payment-options">
-        <h3>Choose Payment Method</h3>
-        <form id="payment-form" method="POST">
-            {% csrf_token %}
-            <div class="payment-buttons">
-                <button type="button" id="upi-payment-btn" class="payment-btn">Pay with UPI</button>
-                <button type="submit" name="payment_method" value="cash" class="payment-btn cash">Pay with Cash</button>
-            </div>
-            <!-- This hidden input will carry the transaction ID -->
-            <input type="hidden" name="transaction_id" id="transaction-id-hidden">
+    <div class="card stack">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h1 style="font-size:1.6rem;">{% if ride.status == 'PENDING' %}Confirm your ride{% else %}Ride #{{ ride.id }}{% endif %}</h1>
+        <span class="badge badge-{{ ride.status|lower }}">{{ ride.get_status_display }}</span>
+      </div>
+
+      <div class="trip">
+        <div class="trip-point from"><span>Pickup</span>{{ ride.pickup_location }}</div>
+        <div class="trip-point to"><span>Drop</span>{{ ride.drop_location }}</div>
+      </div>
+
+      <div class="meta-row">
+        <span class="chip"><i class="bx bxs-car"></i>{{ ride.get_car_type_display }}</span>
+        <span class="chip"><i class="bx bx-trip"></i>{{ ride.distance }} km</span>
+        {% if ride.payment_method %}<span class="chip"><i class="bx bx-wallet"></i>{{ ride.get_payment_method_display }}</span>{% endif %}
+      </div>
+
+      <div class="fare-total">
+        <span class="muted">Total fare</span>
+        <strong>₹{{ ride.fare|floatformat:2 }}</strong>
+      </div>
+
+      {% if ride.status == 'PENDING' %}
+        <form id="payment-form" method="POST" class="stack">
+          {% csrf_token %}
+          <p class="muted">Choose how you'd like to pay:</p>
+          <div class="pay-options">
+            <button type="button" id="upi-payment-btn" class="btn btn-primary"><i class="bx bx-qr"></i>Pay with UPI</button>
+            <button type="submit" name="payment_method" value="cash" class="btn btn-ghost"><i class="bx bx-money"></i>Pay with cash</button>
+          </div>
+          <input type="hidden" name="transaction_id" id="transaction-id-hidden">
         </form>
+        <form method="post" action="{% url 'riderpages:cancel_ride' ride.id %}" style="text-align:center;">
+          {% csrf_token %}
+          <button type="submit" class="link-btn danger" onclick="return confirm('Cancel this ride?');">Cancel booking</button>
+        </form>
+      {% elif ride.status == 'CONFIRMED' %}
+        <div class="alert alert-info"><i class="bx bx-loader-alt bx-spin"></i>Waiting for a driver to accept your ride…</div>
+      {% else %}
+        <p class="muted">This ride is <strong>{{ ride.get_status_display|lower }}</strong>.</p>
+      {% endif %}
     </div>
-    {% endif %}
-</div>
-
-<!-- UPI Payment Modal -->
-    <div id="upi-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h4>Scan to Pay with UPI</h4>
-            
-            <!-- QR Code will be generated here -->
-            <div id="qrcode" class="qr-code"></div>
-            
-            <p class="upi-id">Or pay to: <strong>joeljustine@ybl</strong></p>
-            
-            <!-- Transaction ID Input Field -->
-            <input type="text" id="transaction-id-input" placeholder="Enter Transaction ID" required>
-            
-            <p class="payment-note">After paying, enter the Transaction ID from your UPI app and click confirm.</p>
-            
-            <button type="button" id="confirm-upi-payment" class="payment-btn">Confirm Payment</button>
-        </div>
-    </div>
-
-<!-- QR Code Generator Library -->
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  </div>
+</section>
 
 {% if ride.status == 'PENDING' %}
+<div id="upi-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="upi-title">
+  <div class="card modal">
+    <h2 id="upi-title" style="font-size:1.3rem;">Scan to pay with UPI</h2>
+    <div id="qrcode" class="qr"></div>
+    <p class="muted">Or pay <strong style="color:var(--text)">₹{{ ride.fare|floatformat:2 }}</strong> to <strong style="color:var(--text)">{{ upi_id }}</strong></p>
+    <div class="field" style="width:100%;text-align:left;">
+      <label for="transaction-id-input">UPI transaction ID</label>
+      <input type="text" id="transaction-id-input" class="input" placeholder="e.g. 412345678901" autocomplete="off">
+    </div>
+    <p class="muted" style="font-size:.88rem;">After paying, enter the transaction ID from your UPI app and confirm.</p>
+    <div class="pay-options" style="width:100%;">
+      <button type="button" id="close-upi" class="btn btn-ghost">Back</button>
+      <button type="button" id="confirm-upi-payment" class="btn btn-primary">Confirm payment</button>
+    </div>
+  </div>
+</div>
+{{ upi_id|json_script:"upi-id" }}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if ride.status == 'PENDING' %}
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
-    const upiModal = document.getElementById('upi-modal');
-    const upiPaymentBtn = document.getElementById('upi-payment-btn');
-    const confirmUpiPaymentBtn = document.getElementById('confirm-upi-payment');
-    const paymentForm = document.getElementById('payment-form');
-    const transactionIdInput = document.getElementById('transaction-id-input');
-    const hiddenTransactionIdInput = document.getElementById('transaction-id-hidden');
+  (function () {
+    var modal = document.getElementById('upi-modal');
+    var form = document.getElementById('payment-form');
+    var txnInput = document.getElementById('transaction-id-input');
+    var upiId = JSON.parse(document.getElementById('upi-id').textContent);
+    var upi = 'upi://pay?pa=' + encodeURIComponent(upiId) + '&pn=' + encodeURIComponent('Turbo Cabs') +
+              '&am={{ ride.fare|floatformat:2 }}&tn=Ride-{{ ride.id }}&cu=INR';
 
-    upiPaymentBtn.addEventListener('click', () => {
-        upiModal.style.display = 'flex';
-        
-        // Generate QR Code
-        const qrCodeContainer = document.getElementById('qrcode');
-        qrCodeContainer.innerHTML = ''; // Clear previous QR code
-        
-        const upiString = `upi://pay?pa=joeljustine@ybl&pn=Turbo Cabs&am={{ ride.fare|floatformat:2 }}&tn=Ride-{{ ride.id }}&cu=INR`;
-        
-        new QRCode(qrCodeContainer, {
-            text: upiString,
-            width: 180,
-            height: 180,
-        });
+    function close() { modal.style.display = 'none'; }
+    document.getElementById('upi-payment-btn').addEventListener('click', function () {
+      modal.style.display = 'flex';
+      var box = document.getElementById('qrcode');
+      box.innerHTML = '';
+      new QRCode(box, { text: upi, width: 180, height: 180 });
+      txnInput.focus();
     });
-    
-    confirmUpiPaymentBtn.addEventListener('click', () => {
-        if (transactionIdInput.value.trim() === '') {
-            alert('Please enter the Transaction ID.');
-            return;
-        }
-        // Set the hidden input value and submit the form
-        hiddenTransactionIdInput.value = transactionIdInput.value;
-        
-        // Add a hidden field for the payment method
-        const paymentMethodInput = document.createElement('input');
-        paymentMethodInput.type = 'hidden';
-        paymentMethodInput.name = 'payment_method';
-        paymentMethodInput.value = 'upi';
-        paymentForm.appendChild(paymentMethodInput);
-        
-        paymentForm.submit();
-    });
+    document.getElementById('close-upi').addEventListener('click', close);
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 
-    upiModal.addEventListener('click', (e) => {
-        if (e.target === upiModal) {
-            upiModal.style.display = 'none';
-        }
+    document.getElementById('confirm-upi-payment').addEventListener('click', function () {
+      var txn = txnInput.value.trim();
+      if (!txn) { txnInput.focus(); txnInput.style.borderColor = 'var(--danger)'; return; }
+      document.getElementById('transaction-id-hidden').value = txn;
+      var method = document.createElement('input');
+      method.type = 'hidden'; method.name = 'payment_method'; method.value = 'upi';
+      form.appendChild(method);
+      form.submit();
     });
+  })();
 </script>
 {% endif %}
 {% endblock %}

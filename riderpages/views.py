@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,16 +12,42 @@ from .models import BASE_FARE, RATE_PER_KM, Ride
 rider_required = role_required('rider')
 
 
+VEHICLES = [
+    {'value': 'bike', 'label': 'Bike', 'seats': '1 rider', 'icon': 'bx-cycling',
+     'blurb': 'Beat the traffic on short city hops.'},
+    {'value': 'auto', 'label': 'Auto', 'seats': 'Up to 3', 'icon': 'bxs-taxi',
+     'blurb': 'Affordable everyday rides around town.'},
+    {'value': 'sedan', 'label': 'Sedan', 'seats': 'Up to 4', 'img': 'sedan',
+     'blurb': 'Comfortable, air-conditioned and quiet.'},
+    {'value': 'suv', 'label': 'SUV', 'seats': 'Up to 6', 'img': 'suv',
+     'blurb': 'Extra room for family and luggage.'},
+]
+
+
 def index(request):
-    return render(request, 'riderpages/index.html')
+    vehicles = [{**v, 'rate': RATE_PER_KM[v['value']]} for v in VEHICLES]
+    return render(request, 'riderpages/index.html', {
+        'vehicles': vehicles,
+        'base_fare': BASE_FARE,
+        'min_rate': min(RATE_PER_KM.values()),
+    })
 
 
 def safety(request):
     return render(request, 'riderpages/Safety.html')
 
 
+POPULAR_ROUTES = [
+    ('Bangalore', 'Mysore'),
+    ('Delhi', 'Agra'),
+    ('Mumbai', 'Lonavala'),
+    ('Chennai', 'Pondicherry'),
+    ('Hyderabad', 'Warangal'),
+]
+
+
 def outstation(request):
-    return render(request, 'riderpages/outstation.html')
+    return render(request, 'riderpages/outstation.html', {'routes': POPULAR_ROUTES})
 
 
 def services_page(request):
@@ -77,7 +104,7 @@ def booking_confirmation(request, ride_id):
             )
             return redirect('riderpages:my_rides')
 
-    return render(request, 'riderpages/booking_confirmation.html', {'ride': ride})
+    return render(request, 'riderpages/booking_confirmation.html', {'ride': ride, 'upi_id': settings.UPI_ID})
 
 
 @rider_required

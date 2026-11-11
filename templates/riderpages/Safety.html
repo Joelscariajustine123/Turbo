@@ -1,70 +1,81 @@
 {% extends 'riderpages/base.html' %}
 {% load static %}
+{% block title %}Safety{% endblock %}
+
 {% block content %}
+<section class="page-hero has-image">
+  <div class="hero-bg"><img src="{% static 'riderpages/pages/img/web/driver.webp' %}" alt="" width="1600" height="1021" /></div>
+  <div class="container">
+    <span class="eyebrow">Safety</span>
+    <h1 class="h1">Ensuring your safety, every ride</h1>
+    <p class="lead">From verified drivers to round-the-clock support, safety is built into every part of Turbo.</p>
+  </div>
+</section>
 
-    <div class="container">
-        <h2>Ensuring Your Safety</h2>
-
-        <div class="section">
-            <h3><i class="fas fa-shield-alt"></i> Insurance & Coverage</h3>
-            <p>Every ride is protected by our comprehensive insurance policy, covering passengers, drivers, and third parties.</p>
-            <ul class="safety-list">
-                <li>Injury & Medical Coverage</li>
-                <li>Vehicle Damage Protection</li>
-                <li>Third-Party Liability Insurance</li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h3><i class="fas fa-user-check"></i> Verified & Trained Drivers</h3>
-            <p>All drivers undergo background checks and professional training to ensure safe rides.</p>
-            <ul class="safety-list">
-                <li>Criminal record verification</li>
-                <li>Strict screening & interviews</li>
-                <li>Defensive driving training</li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h3><i class="fas fa-map-marker-alt"></i> Real-Time GPS Tracking</h3>
-            <p>Every trip is monitored via real-time GPS tracking for maximum security.</p>
-            <ul class="safety-list">
-                <li>Live location sharing</li>
-                <li>Automated trip monitoring</li>
-                <li>Route deviation alerts</li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h3><i class="fas fa-phone-alt"></i> 24/7 Emergency Support</h3>
-            <p>Our dedicated safety team is available 24/7 for immediate assistance.</p>
-            <div class="emergency">
-                <p><i class="fas fa-exclamation-triangle"></i> In case of emergency, call:</p>
-                <p><strong>+1 (800) 555-1234</strong></p>
-            </div>
-        </div>
-
-        <div class="section">
-            <h3><i class="fas fa-lock"></i> In-App Safety Features</h3>
-            <p>We provide advanced in-app safety tools for a secure ride experience.</p>
-            <ul class="safety-list">
-                <li>SOS Button – Instant emergency alerts</li>
-                <li>Live Trip Sharing – Share ride details with contacts</li>
-                <li>Two-Way Ratings – Driver & passenger accountability</li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h3><i class="fas fa-exclamation-circle"></i> Rider Safety Tips</h3>
-            <p>To ensure a secure ride, we recommend:</p>
-            <ul class="safety-list">
-                <li>Verify driver & car details before boarding</li>
-                <li>Always wear a seatbelt</li>
-                <li>Use the app’s communication tools instead of personal numbers</li>
-            </ul>
-        </div>
-
-        <a href="contact.html" class="cta-button">Report a Safety Concern</a>
+<section class="section-tight">
+  <div class="container">
+    <div class="emergency reveal">
+      <div>
+        <p class="muted"><i class="bx bx-error"></i> In case of emergency, our safety team is available 24/7</p>
+        <div class="phone">+1 (800) 555-1234</div>
+      </div>
+      <a href="tel:+18005551234" class="btn btn-primary"><i class="bx bxs-phone-call"></i>Call now</a>
     </div>
+  </div>
+</section>
 
+<section class="section-tight">
+  <div class="container">
+    <div class="grid grid-3">
+      <article class="card reveal">
+        <div class="icon-badge"><i class="bx bx-shield-quarter"></i></div>
+        <h3>Insurance &amp; coverage</h3>
+        <p>Every ride is protected by our comprehensive policy covering passengers, drivers and third parties.</p>
+        <ul class="check-list"><li>Injury &amp; medical coverage</li><li>Vehicle damage protection</li><li>Third-party liability insurance</li></ul>
+      </article>
+      <article class="card reveal reveal-delay-1">
+        <div class="icon-badge"><i class="bx bx-user-check"></i></div>
+        <h3>Verified &amp; trained drivers</h3>
+        <p>All drivers undergo background checks and professional training.</p>
+        <ul class="check-list"><li>Criminal record verification</li><li>Strict screening &amp; interviews</li><li>Defensive driving training</li></ul>
+      </article>
+      <article class="card reveal reveal-delay-2">
+        <div class="icon-badge"><i class="bx bx-current-location"></i></div>
+        <h3>Real-time GPS tracking</h3>
+        <p>Every trip is monitored with real-time GPS for maximum security.</p>
+        <ul class="check-list"><li>Live location sharing</li><li>Automated trip monitoring</li><li>Route deviation alerts</li></ul>
+      </article>
+      <article class="card reveal">
+        <div class="icon-badge"><i class="bx bx-support"></i></div>
+        <h3>24/7 emergency support</h3>
+        <p>Our dedicated safety team is available around the clock for immediate assistance.</p>
+        <a href="tel:+18005551234" class="btn btn-ghost btn-sm" style="margin-top: 16px;"><i class="bx bxs-phone-call"></i>+1 (800) 555-1234</a>
+      </article>
+      <article class="card reveal reveal-delay-1">
+        <div class="icon-badge"><i class="bx bx-lock-alt"></i></div>
+        <h3>In-app safety features</h3>
+        <p>Advanced tools for a secure ride experience.</p>
+        <ul class="check-list"><li>SOS button for instant alerts</li><li>Live trip sharing with contacts</li><li>Two-way ratings for accountability</li></ul>
+      </article>
+      <article class="card reveal reveal-delay-2">
+        <div class="icon-badge"><i class="bx bx-bulb"></i></div>
+        <h3>Rider safety tips</h3>
+        <p>To keep every ride secure, we recommend:</p>
+        <ul class="check-list"><li>Verify driver &amp; car details before boarding</li><li>Always wear a seatbelt</li><li>Use in-app tools instead of personal numbers</li></ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section-tight">
+  <div class="container">
+    <div class="cta-band reveal">
+      <div>
+        <h2 class="h2">Something not right?</h2>
+        <p>Tell us about any safety concern and our team will follow up quickly.</p>
+      </div>
+      <div class="actions"><a href="{% url 'riderpages:contact' %}" class="btn btn-light"><i class="bx bx-flag"></i>Report a safety concern</a></div>
+    </div>
+  </div>
+</section>
 {% endblock %}

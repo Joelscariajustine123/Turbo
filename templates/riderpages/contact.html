@@ -1,22 +1,49 @@
 {% extends 'riderpages/base.html' %}
 {% block title %}Contact{% endblock %}
+
 {% block content %}
+<section class="page-hero">
+  <div class="container">
+    <span class="eyebrow">Contact</span>
+    <h1 class="h1">We're here to help</h1>
+    <p class="lead">Questions, feedback or a safety concern — send us a message and we'll get back to you.</p>
+  </div>
+</section>
 
-    <div class="container">
-        <h2>Contact Us</h2>
-
-        <div class="contact-details">
-            <p><i class="fas fa-map-marker-alt"></i> anjarakandy 670612, kannur, kerala</p>
-            <p><i class="fas fa-phone"></i> +1 (123) 456-7890</p>
-            <p><i class="fas fa-envelope"></i> Turbocabs@gmail.com</p>
-        </div>
-
-        <form method="post" action="{% url 'riderpages:contact' %}">
-            {% csrf_token %}
-            <input type="text" name="name" placeholder="Your Name" value="{{ form_data.name|default:'' }}" maxlength="100" required>
-            <input type="email" name="email" placeholder="Your Email" value="{{ form_data.email|default:'' }}" required>
-            <textarea name="message" rows="4" placeholder="Your Message" required>{{ form_data.message|default:'' }}</textarea>
-            <button type="submit">Send Message</button>
-        </form>
+<section class="section-tight">
+  <div class="container split" style="align-items: start;">
+    <div class="stack reveal">
+      <div class="card contact-line">
+        <div class="icon-badge"><i class="bx bx-map"></i></div>
+        <div><span>Visit us</span>Anjarakandy 670612, Kannur, Kerala</div>
+      </div>
+      <a class="card card-hover contact-line" href="tel:+11234567890">
+        <div class="icon-badge"><i class="bx bx-phone"></i></div>
+        <div><span>Call us</span>+1 (123) 456-7890</div>
+      </a>
+      <a class="card card-hover contact-line" href="mailto:Turbocabs@gmail.com">
+        <div class="icon-badge"><i class="bx bx-envelope"></i></div>
+        <div><span>Email us</span>Turbocabs@gmail.com</div>
+      </a>
     </div>
+
+    <form class="card stack reveal reveal-delay-1" method="post" action="{% url 'riderpages:contact' %}">
+      {% csrf_token %}
+      <h2 style="font-size: 1.4rem;">Send a message</h2>
+      <div class="field">
+        <label for="c-name">Your name</label>
+        <input id="c-name" class="input" type="text" name="name" value="{{ form_data.name|default:'' }}" maxlength="100" autocomplete="name" required>
+      </div>
+      <div class="field">
+        <label for="c-email">Email</label>
+        <input id="c-email" class="input" type="email" name="email" value="{{ form_data.email|default:'' }}" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="c-msg">Message</label>
+        <textarea id="c-msg" class="input" name="message" rows="5" required>{{ form_data.message|default:'' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block"><i class="bx bx-send"></i>Send message</button>
+    </form>
+  </div>
+</section>
 {% endblock %}

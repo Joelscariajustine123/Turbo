@@ -1,101 +1,128 @@
-{% load static %}
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{% block title %}Ride with Turbo{% endblock %} - Turbo Cab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0a0c" />
+  <meta name="description" content="{% block description %}Turbo Cab — book safe, comfortable rides in Kannur and across Kerala. Sedans, SUVs, bikes and autos with transparent fares.{% endblock %}" />
+  <title>{% block title %}Ride with Turbo{% endblock %} · Turbo Cab</title>
   <link rel="icon" type="image/png" href="{% static 'riderpages/pages/img/icons8-cab-64.png' %}" />
-  <link rel="stylesheet" href="{% static 'riderpages/pages/css/home.css' %}" />
-  <link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="{% static 'riderpages/pages/css/safety.css' %}">
-  <link rel="stylesheet" href="{% static 'riderpages/pages/css/outstation.css' %}">
-  <link rel="stylesheet" href="{% static 'riderpages/pages/css/contact.css' %}">
-  <link rel="stylesheet" href="{% static 'riderpages/pages/css/services.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'riderpages/css/turbo.css' %}" />
+  <script>document.documentElement.classList.add('js');</script>
   {% block extra_head %}{% endblock %}
 </head>
 <body>
+  {% with current=request.resolver_match.url_name %}
+  <header class="nav">
+    <div class="container nav-inner">
+      <a href="{% url 'riderpages:index' %}" class="nav-logo" aria-label="Turbo Cab home">
+        <img src="{% static 'riderpages/pages/img/web/logo.webp' %}" alt="Turbo" width="122" height="38" />
+      </a>
 
-  <!-- Navigation -->
-  <header class="navbar">
-    <img src="{% static 'riderpages/pages/img/logo1.PNG' %}" class="logo" alt="Turbo Logo" />
-    <ul>
-      <li><a href="{% url 'riderpages:index' %}">Home</a></li>
-      <li><a href="{% url 'riderpages:safety' %}">Safety</a></li>
-      <li><a href="{% url 'riderpages:outstation' %}">Outstation</a></li>
-      <li><a href="{% url 'riderpages:contact' %}">Contact</a></li>
-      <li><a href="{% url 'riderpages:services' %}">Services</a></li>
-      <li><a href="{% url 'riderpages:map_view' %}">Book Now</a></li>
-      {% if user.is_authenticated %}
-      <li><a href="{% url 'riderpages:my_rides' %}">My Rides</a></li>
-      <li><a href="{% url 'account:logout' %}">Logout</a></li>
-      {% else %}
-      <li><a href="{% url 'account:rider_login' %}">Login</a></li>
-      {% endif %}
-    </ul>
-  </header>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true" />
+      <label for="nav-toggle" class="nav-burger" aria-label="Open menu"><i class="bx bx-menu"></i><i class="bx bx-x"></i></label>
 
-  {% if messages %}<div style="padding: 1rem 1rem 0;">{% include "partials/messages.html" %}</div>{% endif %}
-
-  {% block content %}
-  {% endblock %}
-
-    <footer class="footer">
-    <h1>Turbo</h1>
-    <p>Visit Help Center</p><br><br>
-    <div class="footer-container">
-      <div class="footer-column">
-        <h3>Company</h3>
-        <ul>
-          <li><a href="#">About</a></li>
-          <li><a href="#">Careers</a></li>
-          <li><a href="#">Investors</a></li>
-          <li><a href="#">Our offerings</a></li>
-        </ul>
+      <div class="nav-menu">
+        <nav class="nav-links" aria-label="Main">
+          <a href="{% url 'riderpages:index' %}" class="{% if current == 'index' %}active{% endif %}">Home</a>
+          <a href="{% url 'riderpages:services' %}" class="{% if current == 'services' %}active{% endif %}">Services</a>
+          <a href="{% url 'riderpages:outstation' %}" class="{% if current == 'outstation' %}active{% endif %}">Outstation</a>
+          <a href="{% url 'riderpages:safety' %}" class="{% if current == 'safety' %}active{% endif %}">Safety</a>
+          <a href="{% url 'riderpages:contact' %}" class="{% if current == 'contact' %}active{% endif %}">Contact</a>
+          {% if user.is_authenticated and user.role == 'rider' %}
+            <a href="{% url 'riderpages:my_rides' %}" class="{% if current == 'my_rides' %}active{% endif %}">My rides</a>
+          {% endif %}
+        </nav>
+        <div class="nav-cta">
+          {% if user.is_authenticated %}
+            <a href="{% url 'account:logout' %}" class="btn btn-ghost btn-sm">Log out</a>
+          {% else %}
+            <a href="{% url 'account:rider_login' %}" class="btn btn-ghost btn-sm">Log in</a>
+          {% endif %}
+          <a href="{% url 'riderpages:map_view' %}" class="btn btn-primary btn-sm"><i class="bx bxs-taxi"></i>Book a ride</a>
+        </div>
       </div>
-      <div class="footer-column">
-        <h3>Products</h3>
-        <ul>
-          <li><a href="#">Ride</a></li>
-          <li><a href="#">Drive</a></li>
-          <li><a href="#">Deliver</a></li>
-          <li><a href="#">Gift cards</a></li>
-          <li><a href="#">Uber Health</a></li>
-        </ul>
-      </div>
-      <div class="footer-column">
-        <h3>Support</h3>
-        <ul>
-          <li><a href="{% url 'riderpages:safety' %}">Safety</a></li>
-          <li><a href="{% url 'riderpages:contact' %}">Contact</a></li>
-          <li><a href="#">Insurance</a></li>
-        </ul>
-      </div>
-      <div class="footer-column">
-            <h3>Travel</h3>
-            <ul>
-              <li><a href="#">Reserve</a></li>
-              <li><a href="#">Airports</a></li>
-              <li><a href="#">Cities</a></li>
-            </ul>
-          </div>
     </div>
-    <div class="footer-bottom">
-      <div class="social-icons">
-        <a href="#"><img src="{% static 'riderpages/pages/img/facebook.png' %}" alt="Facebook"></a>
-        <a href="#"><img src="{% static 'riderpages/pages/img/twitter.png' %}" alt="Twitter"></a>
-        <a href="#"><img src="{% static 'riderpages/pages/img/youtube.png' %}" alt="YouTube"></a>
-        <a href="#"><img src="{% static 'riderpages/pages/img/linkedin.png' %}" alt="LinkedIn"></a>
-        <a href="#"><img src="{% static 'riderpages/pages/img/1298747_instagram_brand_logo_social media_icon.png' %}" alt="Instagram"></a>
+  </header>
+  {% endwith %}
+
+  {% if messages %}
+  <div class="flash container" role="status">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">
+        <i class="bx {% if message.tags == 'error' %}bx-error-circle{% elif message.tags == 'success' %}bx-check-circle{% else %}bx-info-circle{% endif %}"></i>
+        {{ message }}
       </div>
-      <div class="language-location">
-        <span>🌍 English</span>
-        <span>📍 Kannur</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer %}
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="{% static 'riderpages/pages/img/web/logo.webp' %}" alt="Turbo" width="128" height="40" loading="lazy" />
+          <p>Safe, comfortable rides around Kannur and across Kerala — with transparent fares and verified drivers.</p>
+        </div>
+        <div>
+          <h4>Ride</h4>
+          <ul>
+            <li><a href="{% url 'riderpages:map_view' %}">Book a ride</a></li>
+            <li><a href="{% url 'riderpages:outstation' %}">Outstation trips</a></li>
+            <li><a href="{% url 'riderpages:services' %}">Services</a></li>
+            <li><a href="{% url 'riderpages:my_rides' %}">My rides</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <ul>
+            <li><a href="{% url 'riderpages:safety' %}">Safety</a></li>
+            <li><a href="{% url 'riderpages:contact' %}">Contact us</a></li>
+            <li><a href="{% url 'account:driver_login' %}">Drive with Turbo</a></li>
+            <li><a href="{% url 'account:admin_login' %}">Admin</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Get in touch</h4>
+          <ul>
+            <li><a href="mailto:Turbocabs@gmail.com">Turbocabs@gmail.com</a></li>
+            <li class="muted">Anjarakandy 670612,<br />Kannur, Kerala</li>
+            <li><a href="/app/">Open the web app <i class="bx bx-right-arrow-alt"></i></a></li>
+          </ul>
+        </div>
       </div>
-      <p style="color: white;">&copy; 2025 Turbo. All rights reserved.</p>
+      <div class="footer-bottom">
+        <span>&copy; {% now "Y" %} Turbo Cab. All rights reserved.</span>
+        <span>🇮🇳 English · Kannur</span>
+      </div>
     </div>
   </footer>
+  {% endblock %}
 
+  <script>
+    // Fade sections in as they scroll into view.
+    (function () {
+      var items = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('in'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      items.forEach(function (el) { io.observe(el); });
+      // Close the mobile menu after choosing a link.
+      document.querySelectorAll('.nav-menu a').forEach(function (a) {
+        a.addEventListener('click', function () { document.getElementById('nav-toggle').checked = false; });
+      });
+    })();
+  </script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>
