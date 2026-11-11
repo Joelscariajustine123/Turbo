@@ -33,6 +33,13 @@ export function AuthProvider({ children }) {
     [saveSession],
   );
 
+  // Sign in with Google: `credential` is Google's ID token; the server verifies it.
+  const googleLogin = useCallback(
+    async (credential, role) =>
+      saveSession(await api('/auth/google/', { method: 'POST', body: { credential, role }, auth: false })),
+    [saveSession],
+  );
+
   const resendCode = useCallback(
     (challenge) => api('/auth/resend-code/', { method: 'POST', body: { challenge }, auth: false }),
     [],
@@ -59,8 +66,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, login, register, verifyEmail, resendCode, logout, updateUser }),
-    [user, login, register, verifyEmail, resendCode, logout, updateUser],
+    () => ({ user, login, register, verifyEmail, resendCode, googleLogin, logout, updateUser }),
+    [user, login, register, verifyEmail, resendCode, googleLogin, logout, updateUser],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

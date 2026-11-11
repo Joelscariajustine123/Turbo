@@ -263,3 +263,9 @@ tr.inactive td { opacity: .5; }
 .otp-input { font-size: 2rem; font-weight: 800; letter-spacing: .45em; text-align: center; padding-left: .45em; font-variant-numeric: tabular-nums; }
 .plate { display: inline-block; width: fit-content; padding: .15rem .5rem; border-radius: 6px; background: #f4f4f5; color: #0f0f10; font-weight: 800; letter-spacing: .06em; font-size: .8rem; }
 .badge-arrived { background: #7c3aed; }
+
+/* ---------- Google sign-in ---------- */
+.google-signin { display: grid; gap: 10px; justify-items: center; }
+.google-btn-slot { min-height: 44px; display: flex; justify-content: center; width: 100%; }
+.divider-or { display: flex; align-items: center; gap: 10px; width: 100%; color: var(--muted); font-size: .8rem; text-transform: uppercase; }
+.divider-or::before, .divider-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }

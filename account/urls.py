@@ -13,4 +13,5 @@ urlpatterns = [
     path('ridersignup/', views.ridersignup, name='rider_signup'),
     path('logout/', views.logout_view, name='logout'),
     path('verify-email/', views.verify_email, name='verify_email'),
+    path('google-login/', views.google_login, name='google_login'),
 ]

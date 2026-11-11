@@ -102,6 +102,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'turbo.context_processors.google_signin',
             ],
         },
     },
@@ -269,6 +270,12 @@ EMAIL_BACKEND = ('django.core.mail.backends.smtp.EmailBackend' if EMAIL_CONFIGUR
                  else 'django.core.mail.backends.console.EmailBackend')  # dev: codes printed in the server console
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL',
                                     f'Turbo Cab <{EMAIL_HOST_USER}>' if EMAIL_HOST_USER else 'Turbo Cab <no-reply@turbocab.local>')
+
+# Sign in with Google: the OAuth *Web* client ID from Google Cloud Console
+# (no client secret needed — the browser gets a signed ID token that the server verifies).
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '').strip()
+# Google's sign-in popup needs this instead of Django's default 'same-origin'.
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
 
 # Require emailed codes at register/login?  on | off | auto (default).
 # auto = on when email is configured (or in local DEBUG, where codes go to the console),

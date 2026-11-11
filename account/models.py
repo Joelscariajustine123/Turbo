@@ -13,6 +13,8 @@ class CustomUser(AbstractUser):
     phone = models.CharField(max_length=10, default="9999999999")
     # Set once the user enters the code emailed at registration (see account/email_otp.py).
     email_verified = models.BooleanField(default=False)
+    # Google account ID ("sub") once the user has signed in with Google (see account/google_auth.py).
+    google_sub = models.CharField(max_length=255, unique=True, null=True, blank=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'full_name', 'role']
 

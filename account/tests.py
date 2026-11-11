@@ -207,3 +207,145 @@ class EnsureAdminCommandTests(TestCase):
         self.assertTrue(CustomUser.objects.get().check_password('first-pass-1'))
         self.run_cmd(TURBO_ADMIN_EMAIL='admin@turbo.com', TURBO_ADMIN_PASSWORD='second-pass-2', TURBO_ADMIN_RESET='true')
         self.assertTrue(CustomUser.objects.get().check_password('second-pass-2'))
+
+
+# ---------------------------------------------------------------- Sign in with Google
+
+CLIENT_ID = 'test-client.apps.googleusercontent.com'
+
+
+def _rsa_key():
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    return rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+
+@override_settings(GOOGLE_OAUTH_CLIENT_ID=CLIENT_ID)
+class GoogleTokenVerificationTests(TestCase):
+    """The real verifier, with a locally generated signing key standing in for Google's."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.key = _rsa_key()
+        cls.other_key = _rsa_key()
+
+    def token(self, key=None, **overrides):
+        import time
+
+        import jwt
+        now = int(time.time())
+        claims = {'iss': 'https://accounts.google.com', 'aud': CLIENT_ID, 'sub': '1234567890',
+                  'email': 'Asha@Gmail.com', 'email_verified': True, 'name': 'Asha K', 'iat': now, 'exp': now + 600}
+        claims.update(overrides)
+        return jwt.encode(claims, key or self.key, algorithm='RS256', headers={'kid': 'k1'})
+
+    def verify(self, token):
+        from account import google_auth
+        signing = mock.Mock(key=self.key.public_key())
+        with mock.patch.object(google_auth, '_keys') as keys:
+            keys.return_value.get_signing_key_from_jwt.return_value = signing
+            return google_auth.verify_id_token(token)
+
+    def assertRejected(self, token, code):
+        from django.core.exceptions import ValidationError
+        with self.assertRaises(ValidationError) as ctx:
+            self.verify(token)
+        self.assertEqual(ctx.exception.code, code)
+
+    def test_valid_token(self):
+        claims = self.verify(self.token())
+        self.assertEqual((claims['sub'], claims['email']), ('1234567890', 'Asha@Gmail.com'))
+
+    def test_rejects_wrong_audience_issuer_expiry_signature_and_unverified_email(self):
+        import time
+        self.assertRejected(self.token(aud='another-app'), 'invalid')
+        self.assertRejected(self.token(iss='https://evil.example.com'), 'issuer')
+        self.assertRejected(self.token(exp=int(time.time()) - 3600, iat=int(time.time()) - 7200), 'expired')
+        self.assertRejected(self.token(key=self.other_key), 'invalid')  # not signed by "Google"
+        self.assertRejected(self.token(email_verified=False), 'unverified')
+        self.assertRejected('not-a-jwt', 'invalid')
+
+    @override_settings(GOOGLE_OAUTH_CLIENT_ID='')
+    def test_disabled_without_client_id(self):
+        self.assertRejected(self.token(), 'disabled')
+
+
+@override_settings(GOOGLE_OAUTH_CLIENT_ID=CLIENT_ID)
+class GoogleSignInTests(TestCase):
+    """Account creation / linking rules (token verification mocked)."""
+
+    def claims(self, **extra):
+        return {'sub': 'g-111', 'email': 'asha@gmail.com', 'email_verified': True, 'name': 'Asha K', **extra}
+
+    def post(self, role, claims=None):
+        import json
+        with mock.patch('account.google_auth.verify_id_token', return_value=claims or self.claims()):
+            return self.client.post(reverse('account:google_login'), json.dumps({'credential': 'x', 'role': role}),
+                                    content_type='application/json')
+
+    def test_new_rider_is_created_verified_and_logged_in_without_email_code(self):
+        resp = self.post('rider')
+        self.assertEqual(resp.json()['redirect'], reverse('riderpages:index'))
+        user = CustomUser.objects.get(email='asha@gmail.com')
+        self.assertEqual((user.role, user.google_sub, user.email_verified, user.full_name),
+                         ('rider', 'g-111', True, 'Asha K'))
+        self.assertFalse(user.has_usable_password())
+        self.assertIn('_auth_user_id', self.client.session)
+        self.assertEqual(len(mail.outbox), 0)  # Google already verified the email
+
+    def test_new_driver_goes_to_profile_setup(self):
+        self.assertEqual(self.post('driver').json()['redirect'], reverse('driverpages:edit_profile'))
+
+    def test_existing_password_account_is_linked(self):
+        make_user('rider', email='asha@gmail.com', email_verified=False)
+        self.post('rider')
+        user = CustomUser.objects.get(email='asha@gmail.com')
+        self.assertEqual((user.google_sub, user.email_verified), ('g-111', True))
+        self.assertTrue(user.check_password(PASSWORD))  # password still works too
+        self.assertEqual(CustomUser.objects.count(), 1)
+
+    def test_wrong_role_is_refused(self):
+        make_user('driver', email='asha@gmail.com')
+        resp = self.post('rider')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('registered as a driver', resp.json()['detail'])
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_admins_are_never_created_by_google(self):
+        resp = self.post('admin')
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(CustomUser.objects.exists())
+        make_user('admin', email='asha@gmail.com')
+        self.assertEqual(self.post('admin').json()['redirect'], reverse('adminpages:home'))
+
+    def test_email_linked_to_another_google_account_is_refused(self):
+        make_user('rider', email='asha@gmail.com', google_sub='g-999')
+        self.assertIn('different Google account', self.post('rider').json()['detail'])
+
+    def test_inactive_account_is_refused(self):
+        make_user('rider', email='asha@gmail.com', is_active=False)
+        self.assertEqual(self.post('rider').status_code, 400)
+
+    def test_needs_csrf_token(self):
+        import json
+
+        from django.test import Client
+        c = Client(enforce_csrf_checks=True)
+        with mock.patch('account.google_auth.verify_id_token', return_value=self.claims()):
+            resp = c.post(reverse('account:google_login'), json.dumps({'credential': 'x', 'role': 'rider'}),
+                          content_type='application/json')
+        self.assertEqual(resp.status_code, 403)
+
+    def test_button_only_shown_when_configured(self):
+        self.assertContains(self.client.get(reverse('account:rider_login')), 'accounts.google.com/gsi/client')
+        with override_settings(GOOGLE_OAUTH_CLIENT_ID=''):
+            self.assertNotContains(self.client.get(reverse('account:rider_login')), 'accounts.google.com/gsi/client')
+
+    def test_api_google_login_returns_tokens(self):
+        from rest_framework.test import APIClient
+        with mock.patch('account.google_auth.verify_id_token', return_value=self.claims()):
+            resp = APIClient().post('/api/auth/google/', {'credential': 'x', 'role': 'rider'}, format='json')
+        self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertTrue(resp.data['created'])
+        self.assertIn('access', resp.data)
+        self.assertEqual(APIClient().get('/api/meta/').data['google_client_id'], CLIENT_ID)

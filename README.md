@@ -51,6 +51,7 @@ python manage.py test                        # 48 tests
 | `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | — | Gmail address + app password for verification codes |
 | `DEFAULT_FROM_EMAIL` | `Turbo Cab <EMAIL_HOST_USER>` | Sender shown in the emails |
 | `TURBO_EMAIL_OTP` | `auto` | `on` / `off` / `auto` (on when email is configured) |
+| `GOOGLE_OAUTH_CLIENT_ID` | — | OAuth Web client ID for "Continue with Google" (button hidden when empty) |
 
 ### How fares work
 The client sends pickup/drop **coordinates**; the server works out the distance (OSRM road route, or straight line × 1.3 if OSRM is unreachable, with a 5-minute back-off) and the fare: `₹50 + km × rate` (Sedan 15, SUV 20, Bike 8, Auto 12, set in `riderpages/models.py`). Clients cannot set the price.
@@ -239,3 +240,25 @@ Locally (`DEBUG=True`, no email settings) the codes are printed in the `runserve
   * Distance left is measured along the route line, and the route is recalculated when the driver strays 100 m.
   * ETAs come from the route's real driving times.
   * The trip trail is recorded every 5 s or 10 m.
+
+---
+
+## 9. Sign in with Google
+
+A **Continue with Google** button is shown on the login and sign-up pages (website and React) once `GOOGLE_OAUTH_CLIENT_ID` is set.
+
+* The browser gets a signed ID token from Google. The server verifies the signature (Google's public keys), that it was issued for **your** client ID, the issuer, the expiry and that Google verified the email.
+* Then it logs in the matching account (found by Google ID or by email, and linked), or creates a new **rider/driver** account. Admin accounts are never created this way, but existing admins can use Google to log in.
+* No emailed code is needed, because Google has already confirmed the email. A Google account registered as a driver can't log in on the rider page (and vice versa).
+* Accounts created with Google have no password; they keep using Google.
+
+### Google Cloud setup (free)
+1. Go to [console.cloud.google.com](https://console.cloud.google.com/) and create (or pick) a project.
+2. **APIs & Services → OAuth consent screen**: choose *External*, set the app name "Turbo Cab", a support email and the developer email, then save. Under *Audience*, click **Publish app** so everyone can sign in, not just test users. The basic scopes (email, profile) need no Google review.
+3. **APIs & Services → Credentials → Create credentials → OAuth client ID → Web application**.
+   * **Authorized JavaScript origins:** `https://turbo-u967.onrender.com`, plus `http://localhost:8000` and `http://localhost:5173` for local testing.
+   * No redirect URI is needed.
+4. Copy the **Client ID** (`…apps.googleusercontent.com`). The client secret isn't used.
+5. In Render, open **turbo → Environment**, add `GOOGLE_OAUTH_CLIENT_ID` = that ID, then **Save, rebuild and deploy**.
+
+Google sign-in works on Render's free plan (it doesn't send email). The mobile apps still use email + password; adding Google there needs an Android OAuth client with your app's signing SHA-1.

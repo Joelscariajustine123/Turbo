@@ -60,13 +60,7 @@
       <div class="footer-text">
         Already have an account? <a href="{% url 'account:driver_login' %}">Log in</a>
       </div>
-
-      <div class="divider"><span>Or</span></div>
-
-      <button type="button" class="google-btn" disabled title="Google sign-in is not available yet">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_2013_Google.png" alt="Google" />
-        Sign up with Google
-      </button>
+        {% include "partials/google_button.html" with role="driver" text="signup_with" %}
     </form>
   </div>
 </body>

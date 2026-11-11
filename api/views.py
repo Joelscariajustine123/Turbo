@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from account import email_otp
+from account import email_otp, google_auth
 from account.models import CustomUser
 from account.services import register_user
 from adminpages import services as admin_services
@@ -70,6 +70,7 @@ class MetaView(APIView):
             'payment_methods': [{'value': v, 'label': l} for v, l in PAYMENT_METHOD_CHOICES],
             'availability_statuses': [{'value': v, 'label': l} for v, l in AvailabilityStatus.choices],
             'upi_id': settings.UPI_ID,
+            'google_client_id': google_auth.client_id(),  # empty = Google sign-in off
         })
 
 
@@ -106,6 +107,21 @@ class LoginView(APIView):
         if email_otp.enabled():
             return _email_challenge(user)
         return Response(_tokens_for(user))
+
+
+class GoogleLoginView(APIView):
+    """POST {credential, role} -> {access, refresh, user, created}. `credential` is Google's ID token."""
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def post(self, request):
+        role = request.data.get('role')
+        if role not in ('rider', 'driver', 'admin'):
+            return Response({'detail': 'Unknown account type.'}, status=status.HTTP_400_BAD_REQUEST)
+        claims = google_auth.verify_id_token(request.data.get('credential'))
+        user, created = google_auth.sign_in(claims, role)
+        return Response({**_tokens_for(user), 'created': created})
 
 
 class VerifyEmailOTPView(APIView):

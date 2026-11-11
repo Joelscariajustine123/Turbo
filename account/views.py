@@ -1,10 +1,15 @@
+import json
+
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.exceptions import ValidationError
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
-from . import email_otp
+from . import email_otp, google_auth
 from .models import CustomUser
 from .services import admin_signup_open, register_user
 
@@ -160,6 +165,39 @@ def driverlogin(request):
 
 def adminlogin(request):
     return _login(request, 'admin', 'account/adminlogin.html', 'Admin')
+
+
+@require_POST
+def google_login(request):
+    """Called by the "Continue with Google" button with Google's ID token (CSRF-protected).
+
+    Google has verified the email, so no emailed code is needed. Returns {redirect}.
+    """
+    try:
+        data = json.loads(request.body or b'{}')
+    except ValueError:
+        data = {}
+    role = data.get('role')
+    if role not in HOME:
+        return JsonResponse({'detail': 'Unknown account type.'}, status=400)
+    try:
+        claims = google_auth.verify_id_token(data.get('credential'))
+        user, created = google_auth.sign_in(claims, role)
+    except ValidationError as exc:
+        return JsonResponse({'detail': exc.messages[0]}, status=400)
+
+    request.session.pop(PENDING_KEY, None)
+    login(request, user, backend=BACKEND)
+    next_url = data.get('next') or ''
+    if created:
+        if role == 'driver':
+            messages.success(request, "Welcome to Turbo! Add your phone, licence and vehicle so you can start taking rides.")
+            return JsonResponse({'redirect': reverse('driverpages:edit_profile')})
+        messages.success(request, f"Welcome to Turbo, {user.full_name}!")
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()},
+                                                    require_https=request.is_secure()):
+        return JsonResponse({'redirect': next_url})
+    return JsonResponse({'redirect': reverse(HOME[role])})
 
 
 def logout_view(request):

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { homeFor, useAuth } from '../auth/AuthContext';
+import GoogleButton from '../components/GoogleButton';
 import { Alert, Field, useAction } from '../components/ui';
 
 const ROLES = {
@@ -113,6 +114,7 @@ export function Login() {
         <button className="btn primary block" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
+        <GoogleButton role={role} text={role === 'admin' ? 'signin_with' : 'continue_with'} onSignedIn={go} />
         <p className="muted center">
           {role !== 'admin' ? (
             <>
@@ -193,6 +195,7 @@ export function Register() {
         <button className="btn primary block" disabled={busy}>
           {busy ? 'Creating account…' : 'Create account'}
         </button>
+        <GoogleButton role={role} text="signup_with" onSignedIn={done} />
         <p className="muted center">
           Already registered? <Link to={`/login/${role}`}>Log in</Link>
         </p>
