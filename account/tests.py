@@ -336,10 +336,13 @@ class GoogleSignInTests(TestCase):
                           content_type='application/json')
         self.assertEqual(resp.status_code, 403)
 
-    def test_button_only_shown_when_configured(self):
-        self.assertContains(self.client.get(reverse('account:rider_login')), 'accounts.google.com/gsi/client')
-        with override_settings(GOOGLE_OAUTH_CLIENT_ID=''):
-            self.assertNotContains(self.client.get(reverse('account:rider_login')), 'accounts.google.com/gsi/client')
+    def test_no_google_button_on_any_auth_page(self):
+        # Google sign-in was removed from the pages: no Google script, logo or button text anywhere.
+        for name in ('rider_login', 'driver_login', 'admin_login', 'rider_signup', 'driver_signup', 'usertype'):
+            body = self.client.get(reverse(f'account:{name}')).content.decode()
+            self.assertNotIn('accounts.google.com', body, name)
+            self.assertNotIn('with Google', body, name)
+            self.assertNotIn('Logo_2013_Google', body, name)
 
     def test_api_google_login_returns_tokens(self):
         from rest_framework.test import APIClient
