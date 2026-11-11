@@ -128,3 +128,11 @@ class TrustPagesTests(TestCase):
         with override_settings(GOOGLE_SITE_VERIFICATION='abc123token'):
             self.assertContains(self.client.get('/'), '<meta name="google-site-verification" content="abc123token" />',
                                 html=False)
+
+
+class SearchConsoleFileTests(TestCase):
+    def test_verification_file_is_served_exactly(self):
+        resp = self.client.get('/google696da265b08989c0.html')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content.decode(), 'google-site-verification: google696da265b08989c0.html')
+        self.assertEqual(self.client.get('/google0000000000000000.html').status_code, 404)

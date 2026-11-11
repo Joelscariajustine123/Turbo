@@ -276,6 +276,8 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL',
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '').strip()
 # Google Search Console ownership token (the content="..." value of the HTML-tag method).
 GOOGLE_SITE_VERIFICATION = os.environ.get('GOOGLE_SITE_VERIFICATION', '').strip()
+# ...or the HTML-file method: Google fetches /<file>.html (comma-separate several).
+GOOGLE_SITE_VERIFICATION_FILES = env_list('GOOGLE_SITE_VERIFICATION_FILES', 'google696da265b08989c0.html')
 # Google's sign-in popup needs this instead of Django's default 'same-origin'.
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
 

@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib import admin
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.urls import include, path, re_path
 from django.views.static import serve as serve_file
 
@@ -18,7 +18,15 @@ def react_app(request, *args, **kwargs):
     return response
 
 
+def google_site_verification(request, filename):
+    """Search Console HTML-file ownership check: serve exactly the line Google expects."""
+    if filename not in settings.GOOGLE_SITE_VERIFICATION_FILES:
+        raise Http404()
+    return HttpResponse(f'google-site-verification: {filename}', content_type='text/html; charset=utf-8')
+
+
 urlpatterns = [
+    re_path(r'^(?P<filename>google[0-9a-f]{8,}\.html)$', google_site_verification, name='google-site-verification'),
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
     re_path(r'^app(?:/.*)?$', react_app, name='react-app'),
